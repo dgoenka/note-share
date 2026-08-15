@@ -11,3 +11,5 @@ coverage
 .prisma
 apps/api/prisma/*.db
 apps/api/prisma/*.db-journal
+.vercel
+.env*

@@ -296,10 +296,32 @@ Production upgrades: Redis rate limits, CAPTCHA after N failures, temporary lock
 
 ---
 
+## Live deployment
+
+| Layer | URL |
+|-------|-----|
+| **Frontend (Vercel)** | https://note-share-ruby.vercel.app |
+| **API (Railway)** | https://api-production-5dd68.up.railway.app |
+| **API health** | https://api-production-5dd68.up.railway.app/health |
+| **GitHub** | https://github.com/dgoenka/note-share |
+| **Database** | Aiven PostgreSQL (`sslmode=require`) |
+
+Redeploy API after code changes (from monorepo root, linked project):
+
+```bash
+railway up -y -d -s api
+```
+
+Redeploy web:
+
+```bash
+vercel deploy --prod --yes
+```
+
 ## Deliverables checklist
 
 - [x] GitHub repository (this repo)
-- [ ] Live demo URL (deploy when ready)
+- [x] Live demo URL — https://note-share-ruby.vercel.app
 - [ ] Demo video
 - [x] Test credentials (self-register; example above)
 
