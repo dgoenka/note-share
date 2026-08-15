@@ -1,0 +1,22 @@
+{
+  "name": "note-share",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Note-taking app with secure expiring share links — MERN/PERN POC",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "dev:api": "pnpm --filter @note-share/api dev",
+    "dev:web": "pnpm --filter @note-share/web dev",
+    "build": "pnpm --filter @note-share/shared build && pnpm --filter @note-share/api build && pnpm --filter @note-share/web build",
+    "build:shared": "pnpm --filter @note-share/shared build",
+    "db:generate": "pnpm --filter @note-share/api db:generate",
+    "db:migrate": "pnpm --filter @note-share/api db:migrate",
+    "db:push": "pnpm --filter @note-share/api db:push",
+    "db:studio": "pnpm --filter @note-share/api db:studio",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

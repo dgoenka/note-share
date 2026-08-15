@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  notes        Note[]
+
+  @@map("users")
+}
+
+model Note {
+  id               String     @id @default(cuid())
+  title            String
+  content          String
+  shareType        ShareType
+  accessType       AccessType
+  /// Cryptographically random opaque token used in /share/[token]
+  shareToken       String     @unique
+  /// bcrypt hash of the one-time-shown access key (null for PUBLIC)
+  accessKeyHash    String?
+  expiresAt        DateTime?
+  /// Set when owner force-revokes the share link
+  revokedAt        DateTime?
+  /// Set on first successful view for ONE_TIME shares (race-safe claim)
+  usedAt           DateTime?
+  /// Atomic counter of successful views only
+  viewCount        Int        @default(0)
+  ownerId          String
+  owner            User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@index([ownerId])
+  @@index([shareToken])
+  @@map("notes")
+}
+
+enum ShareType {
+  ONE_TIME
+  TIME_BASED
+}
+
+enum AccessType {
+  PUBLIC
+  PASSWORD
+}

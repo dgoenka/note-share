@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: note-share-db
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: noteshare
+      POSTGRES_PASSWORD: noteshare
+      POSTGRES_DB: noteshare
+    volumes:
+      - note_share_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U noteshare -d noteshare"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  note_share_pgdata:
