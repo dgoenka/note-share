@@ -9,6 +9,8 @@
     "dev:web": "pnpm --filter @note-share/web dev",
     "build": "pnpm --filter @note-share/shared build && pnpm --filter @note-share/api build && pnpm --filter @note-share/web build",
     "build:shared": "pnpm --filter @note-share/shared build",
+    "build:api": "pnpm --filter @note-share/shared build && pnpm --filter @note-share/api exec prisma generate && pnpm --filter @note-share/api build",
+    "start:api": "pnpm --filter @note-share/api start",
     "db:generate": "pnpm --filter @note-share/api db:generate",
     "db:migrate": "pnpm --filter @note-share/api db:migrate",
     "db:push": "pnpm --filter @note-share/api db:push",

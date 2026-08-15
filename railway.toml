@@ -1,0 +1,14 @@
+# Deploy the API from the monorepo root on Railway.
+# Dashboard: New Project → Deploy from GitHub → select dgoenka/note-share
+# Root Directory: / (repo root)
+# Watch paths: apps/api/**, packages/shared/**
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "pnpm install --frozen-lockfile && pnpm --filter @note-share/shared build && pnpm --filter @note-share/api exec prisma generate && pnpm --filter @note-share/api build"
+
+[deploy]
+startCommand = "pnpm --filter @note-share/api start"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"

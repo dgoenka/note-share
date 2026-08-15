@@ -12,9 +12,14 @@ const app = new Hono();
 app.use(
   "*",
   cors({
-    origin: env.CORS_ORIGIN,
+    origin: (origin) => {
+      // Non-browser clients (curl/health checks) may omit Origin
+      if (!origin) return env.corsOrigins[0] ?? "http://localhost:3000";
+      return env.corsOrigins.includes(origin) ? origin : null;
+    },
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true,
   })
 );
 
@@ -34,7 +39,8 @@ app.onError((err, c) => {
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 
-console.log(`[api] listening on http://localhost:${env.PORT}`);
-serve({ fetch: app.fetch, port: env.PORT });
+// Bind 0.0.0.0 so cloud hosts (Railway/Render) can route traffic in.
+console.log(`[api] listening on http://0.0.0.0:${env.PORT}`);
+serve({ fetch: app.fetch, port: env.PORT, hostname: "0.0.0.0" });
 
 export default app;

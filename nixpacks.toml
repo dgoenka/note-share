@@ -1,0 +1,16 @@
+# Ensure Railway/Nixpacks uses pnpm for the monorepo.
+[phases.setup]
+nixPkgs = ["nodejs_22", "pnpm"]
+
+[phases.install]
+cmds = ["pnpm install --frozen-lockfile"]
+
+[phases.build]
+cmds = [
+  "pnpm --filter @note-share/shared build",
+  "pnpm --filter @note-share/api exec prisma generate",
+  "pnpm --filter @note-share/api build"
+]
+
+[start]
+cmd = "pnpm --filter @note-share/api start"

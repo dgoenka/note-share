@@ -1,0 +1,11 @@
+# Railway service config for the API (set Root Directory to repo root, or
+# point the service at this file via the Railway dashboard).
+[build]
+builder = "NIXPACKS"
+buildCommand = "pnpm install --frozen-lockfile && pnpm --filter @note-share/shared build && pnpm --filter @note-share/api exec prisma generate && pnpm --filter @note-share/api build"
+
+[deploy]
+startCommand = "pnpm --filter @note-share/api start"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
