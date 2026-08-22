@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { KeyRound, Sparkles } from "lucide-react";
 import type { ShareStatus, SharedNoteView } from "@note-share/shared";
 import { unlockShareSchema } from "@note-share/shared";
 import { api, ApiError } from "@/lib/api";
@@ -49,7 +50,6 @@ export default function SharePage() {
     void loadStatus();
   }, [loadStatus]);
 
-  // Auto-open public links once status is OK
   useEffect(() => {
     if (!status || !token || view) return;
     if (!status.valid || status.requiresPassword) return;
@@ -66,7 +66,6 @@ export default function SharePage() {
           setError(
             err instanceof ApiError ? err.message : "Failed to open share"
           );
-          // refresh status (may be used/expired after race)
           void loadStatus();
         }
       } finally {
@@ -108,9 +107,9 @@ export default function SharePage() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="py-10 text-center text-sm text-slate-500">
-          Checking share link…
+      <Card className="animate-fade-up">
+        <CardContent className="py-12 text-center text-sm text-[var(--muted)]">
+          Peeking at this share link…
         </CardContent>
       </Card>
     );
@@ -118,9 +117,13 @@ export default function SharePage() {
 
   if (view) {
     return (
-      <Card>
+      <Card className="animate-fade-up overflow-hidden">
+        <div className="h-2 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-rose-400" />
         <CardHeader>
-          <CardTitle>{view.title}</CardTitle>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-500">
+            Shared note
+          </p>
+          <CardTitle className="text-3xl">{view.title}</CardTitle>
           <CardDescription>
             {view.shareType === "ONE_TIME" ? "One-time" : "Time-based"}
             {" · "}
@@ -133,13 +136,13 @@ export default function SharePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="whitespace-pre-wrap rounded-md border border-slate-100 bg-slate-50 p-4 text-sm">
+          <div className="whitespace-pre-wrap rounded-2xl border border-violet-100 bg-gradient-to-br from-white to-violet-50/60 p-5 text-sm leading-relaxed shadow-inner">
             {view.content}
           </div>
           {view.shareType === "ONE_TIME" && (
             <Alert variant="warning" className="mt-4">
-              This was a one-time link. It is now consumed and cannot be opened
-              again.
+              Boom — this was a one-time link. It&apos;s consumed and can&apos;t
+              be opened again.
             </Alert>
           )}
         </CardContent>
@@ -156,16 +159,16 @@ export default function SharePage() {
       ALREADY_USED: "This one-time link has already been used.",
     };
     return (
-      <Card>
+      <Card className="animate-fade-up">
         <CardHeader>
-          <CardTitle>Link unavailable</CardTitle>
+          <CardTitle className="text-3xl">Link unavailable</CardTitle>
           <CardDescription>
             {messages[reason] || "This share link cannot be opened."}
           </CardDescription>
         </CardHeader>
         {status?.title && (
           <CardContent>
-            <p className="text-sm text-slate-500">Note: {status.title}</p>
+            <p className="text-sm text-[var(--muted)]">Note: {status.title}</p>
           </CardContent>
         )}
       </Card>
@@ -174,9 +177,21 @@ export default function SharePage() {
 
   if (status.requiresPassword) {
     return (
-      <Card className="mx-auto max-w-md">
+      <Card className="animate-fade-up mx-auto max-w-md overflow-hidden">
+        <div className="flex items-center gap-3 border-b border-violet-100 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-6 py-4">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-md">
+            <KeyRound className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
+              Locked
+            </p>
+            <p className="font-display text-lg font-semibold">
+              {status.title || "Protected note"}
+            </p>
+          </div>
+        </div>
         <CardHeader>
-          <CardTitle>{status.title || "Protected note"}</CardTitle>
           <CardDescription>
             Enter the access key to unlock this note.
           </CardDescription>
@@ -192,10 +207,11 @@ export default function SharePage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="off"
+                placeholder="Paste the key you were given"
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={opening}>
+            <Button type="submit" className="w-full" size="lg" disabled={opening}>
               {opening ? "Unlocking…" : "Unlock"}
             </Button>
           </form>
@@ -205,8 +221,9 @@ export default function SharePage() {
   }
 
   return (
-    <Card>
-      <CardContent className="space-y-3 py-10 text-center text-sm text-slate-500">
+    <Card className="animate-fade-up">
+      <CardContent className="space-y-3 py-12 text-center text-sm text-[var(--muted)]">
+        <Sparkles className="mx-auto h-6 w-6 animate-floaty text-violet-500" />
         {opening ? "Opening note…" : "Preparing…"}
         {error && (
           <Alert variant="destructive" className="text-left">

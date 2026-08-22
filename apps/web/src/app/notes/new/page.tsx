@@ -103,12 +103,15 @@ function NewNoteForm() {
   }
 
   return (
-    <Card>
+    <Card className="animate-fade-up">
       <CardHeader>
-        <CardTitle>Create note</CardTitle>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-500">
+          Compose
+        </p>
+        <CardTitle className="text-3xl">Create a note</CardTitle>
         <CardDescription>
-          A secure share link is generated on create. For password-protected
-          notes, the access key is shown once.
+          We mint a secure share link on create. Password notes get a
+          one-time access key — grab it before it disappears.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -121,11 +124,12 @@ function NewNoteForm() {
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              placeholder="Weekend Wi‑Fi password"
               required
               maxLength={200}
             />
             {fieldErrors.title && (
-              <p className="text-xs text-red-600">{fieldErrors.title}</p>
+              <p className="text-xs text-rose-600">{fieldErrors.title}</p>
             )}
           </div>
 
@@ -135,45 +139,46 @@ function NewNoteForm() {
               id="content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
+              placeholder="Write the secret sauce…"
               required
               rows={8}
             />
             {fieldErrors.content && (
-              <p className="text-xs text-red-600">{fieldErrors.content}</p>
+              <p className="text-xs text-rose-600">{fieldErrors.content}</p>
             )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <fieldset className="space-y-2">
               <Label>Share type</Label>
-              <div className="space-y-2 rounded-md border border-slate-200 p-3">
-                <label className="flex cursor-pointer items-start gap-2 text-sm">
+              <div className="space-y-2 rounded-2xl border border-violet-200/70 bg-white/50 p-3">
+                <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
                   <input
                     type="radio"
                     name="shareType"
                     checked={shareType === "TIME_BASED"}
                     onChange={() => setShareType("TIME_BASED")}
-                    className="mt-1"
+                    className="mt-1 accent-violet-600"
                   />
                   <span>
-                    <span className="font-medium">Time-based</span>
-                    <span className="block text-xs text-slate-500">
+                    <span className="font-semibold">Time-based</span>
+                    <span className="block text-xs text-[var(--muted)]">
                       Expires after the selected date/time
                     </span>
                   </span>
                 </label>
-                <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
                   <input
                     type="radio"
                     name="shareType"
                     checked={shareType === "ONE_TIME"}
                     onChange={() => setShareType("ONE_TIME")}
-                    className="mt-1"
+                    className="mt-1 accent-violet-600"
                   />
                   <span>
-                    <span className="font-medium">One-time</span>
-                    <span className="block text-xs text-slate-500">
-                      Invalid after the first successful view
+                    <span className="font-semibold">One-time</span>
+                    <span className="block text-xs text-[var(--muted)]">
+                      Burns after the first successful view
                     </span>
                   </span>
                 </label>
@@ -182,34 +187,34 @@ function NewNoteForm() {
 
             <fieldset className="space-y-2">
               <Label>Access type</Label>
-              <div className="space-y-2 rounded-md border border-slate-200 p-3">
-                <label className="flex cursor-pointer items-start gap-2 text-sm">
+              <div className="space-y-2 rounded-2xl border border-violet-200/70 bg-white/50 p-3">
+                <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
                   <input
                     type="radio"
                     name="accessType"
                     checked={accessType === "PUBLIC"}
                     onChange={() => setAccessType("PUBLIC")}
-                    className="mt-1"
+                    className="mt-1 accent-violet-600"
                   />
                   <span>
-                    <span className="font-medium">Public</span>
-                    <span className="block text-xs text-slate-500">
+                    <span className="font-semibold">Public</span>
+                    <span className="block text-xs text-[var(--muted)]">
                       Anyone with the link can open it
                     </span>
                   </span>
                 </label>
-                <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
                   <input
                     type="radio"
                     name="accessType"
                     checked={accessType === "PASSWORD"}
                     onChange={() => setAccessType("PASSWORD")}
-                    className="mt-1"
+                    className="mt-1 accent-violet-600"
                   />
                   <span>
-                    <span className="font-medium">Password-protected</span>
-                    <span className="block text-xs text-slate-500">
-                      Server generates a one-time access key
+                    <span className="font-semibold">Password-protected</span>
+                    <span className="block text-xs text-[var(--muted)]">
+                      We generate a one-time access key
                     </span>
                   </span>
                 </label>
@@ -228,14 +233,14 @@ function NewNoteForm() {
                 required
               />
               {fieldErrors.expiresAt && (
-                <p className="text-xs text-red-600">{fieldErrors.expiresAt}</p>
+                <p className="text-xs text-rose-600">{fieldErrors.expiresAt}</p>
               )}
             </div>
           )}
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Creating…" : "Create & generate share link"}
+              {submitting ? "Minting link…" : "Create & generate share link"}
             </Button>
             <Button
               type="button"

@@ -23,7 +23,7 @@ export default function NoteDetailPage() {
   return (
     <RequireAuth>
       <Suspense
-        fallback={<p className="text-sm text-slate-500">Loading note…</p>}
+        fallback={<p className="text-sm text-violet-600/80">Loading note…</p>}
       >
         <NoteDetailView />
       </Suspense>
@@ -89,7 +89,7 @@ function NoteDetailView() {
   }
 
   if (loading) {
-    return <p className="text-sm text-slate-500">Loading note…</p>;
+    return <p className="text-sm text-violet-600/80">Loading note…</p>;
   }
 
   if (error && !note) {
@@ -99,7 +99,7 @@ function NoteDetailView() {
   if (!note) return null;
 
   return (
-    <div className="space-y-4">
+    <div className="animate-fade-up space-y-4">
       <Button variant="ghost" size="sm" onClick={() => router.push("/")}>
         ← Back to notes
       </Button>
@@ -108,13 +108,15 @@ function NoteDetailView() {
 
       {accessKeyFromCreate && note.accessType === "PASSWORD" && (
         <Alert variant="warning">
-          <p className="font-medium">Save this access key now</p>
+          <p className="font-display text-base font-semibold">
+            Save this access key now
+          </p>
           <p className="mt-1 text-xs">
-            It is generated once and is not shown again. Share it only with the
+            Generated once — we won&apos;t show it again. Share it only with the
             intended recipient.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <code className="rounded bg-white/70 px-2 py-1 font-mono text-sm">
+            <code className="rounded-xl bg-white/80 px-3 py-1.5 font-mono text-sm shadow-sm">
               {accessKeyFromCreate}
             </code>
             <Button
@@ -134,11 +136,12 @@ function NoteDetailView() {
         </Alert>
       )}
 
-      <Card>
+      <Card className="overflow-hidden">
+        <div className="h-2 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-rose-400" />
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <CardTitle>{note.title}</CardTitle>
+              <CardTitle className="text-3xl">{note.title}</CardTitle>
               <CardDescription>
                 Created {formatDateTime(note.createdAt)}
               </CardDescription>
@@ -157,32 +160,32 @@ function NoteDetailView() {
               ) : note.isExpired ? (
                 <Badge variant="warning">Expired</Badge>
               ) : (
-                <Badge variant="success">Active</Badge>
+                <Badge variant="success">Live</Badge>
               )}
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+            <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
               Content
             </h4>
-            <div className="whitespace-pre-wrap rounded-md border border-slate-100 bg-slate-50 p-4 text-sm">
+            <div className="whitespace-pre-wrap rounded-2xl border border-violet-100 bg-gradient-to-br from-white to-violet-50/50 p-5 text-sm leading-relaxed">
               {note.content}
             </div>
           </div>
 
-          <div className="grid gap-3 text-sm sm:grid-cols-2">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+          <div className="grid gap-4 text-sm sm:grid-cols-2">
+            <div className="rounded-2xl border border-violet-100 bg-white/60 p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
                 Share link
               </p>
-              <div className="mt-1 flex flex-wrap items-center gap-2">
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 <a
                   href={note.shareUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="break-all font-mono text-xs text-blue-700 underline"
+                  className="break-all font-mono text-xs text-violet-700 underline decoration-violet-300 underline-offset-2"
                 >
                   {note.shareUrl}
                 </a>
@@ -201,13 +204,15 @@ function NoteDetailView() {
                 </Button>
               </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            <div className="space-y-1 rounded-2xl border border-violet-100 bg-white/60 p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
                 Stats
               </p>
               <p>
                 Successful views:{" "}
-                <span className="font-semibold">{note.viewCount}</span>
+                <span className="font-bold text-violet-800">
+                  {note.viewCount}
+                </span>
               </p>
               <p>Expires: {formatDateTime(note.expiresAt)}</p>
               <p>Used at: {formatDateTime(note.usedAt)}</p>
@@ -215,7 +220,7 @@ function NoteDetailView() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+          <div className="flex flex-wrap gap-2 border-t border-violet-100 pt-4">
             <Button
               variant="destructive"
               onClick={revoke}

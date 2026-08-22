@@ -57,11 +57,14 @@ export default function RegisterPage() {
   }
 
   return (
-    <Card className="mx-auto max-w-md">
+    <Card className="animate-fade-up mx-auto max-w-md">
       <CardHeader>
-        <CardTitle>Create account</CardTitle>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-500">
+          First time?
+        </p>
+        <CardTitle className="text-3xl">Join NoteShare</CardTitle>
         <CardDescription>
-          Register to create notes and secure share links.
+          Two minutes to set up. Forever (or until expiry) to share.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -74,10 +77,11 @@ export default function RegisterPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoComplete="name"
+              placeholder="Ada Lovelace"
               required
             />
             {fieldErrors.name && (
-              <p className="text-xs text-red-600">{fieldErrors.name}</p>
+              <p className="text-xs text-rose-600">{fieldErrors.name}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -86,12 +90,13 @@ export default function RegisterPage() {
               id="email"
               type="email"
               autoComplete="email"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
             {fieldErrors.email && (
-              <p className="text-xs text-red-600">{fieldErrors.email}</p>
+              <p className="text-xs text-rose-600">{fieldErrors.email}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -100,22 +105,26 @@ export default function RegisterPage() {
               id="password"
               type="password"
               autoComplete="new-password"
+              placeholder="At least 8 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={8}
             />
             {fieldErrors.password && (
-              <p className="text-xs text-red-600">{fieldErrors.password}</p>
+              <p className="text-xs text-rose-600">{fieldErrors.password}</p>
             )}
           </div>
-          <Button type="submit" className="w-full" disabled={submitting}>
+          <Button type="submit" className="w-full" size="lg" disabled={submitting}>
             {submitting ? "Creating…" : "Create account"}
           </Button>
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm text-[var(--muted)]">
             Already have an account?{" "}
-            <Link href="/login" className="font-medium text-slate-900 underline">
-              Login
+            <Link
+              href="/login"
+              className="font-bold text-violet-700 underline decoration-violet-300 underline-offset-4"
+            >
+              Log in
             </Link>
           </p>
         </form>

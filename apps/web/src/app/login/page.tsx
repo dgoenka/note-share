@@ -56,11 +56,14 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="mx-auto max-w-md">
+    <Card className="animate-fade-up mx-auto max-w-md">
       <CardHeader>
-        <CardTitle>Login</CardTitle>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-500">
+          Welcome back
+        </p>
+        <CardTitle className="text-3xl">Log in</CardTitle>
         <CardDescription>
-          Access your notes and manage share links.
+          Hop back in and keep those share links under control.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -72,12 +75,13 @@ export default function LoginPage() {
               id="email"
               type="email"
               autoComplete="email"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
             {fieldErrors.email && (
-              <p className="text-xs text-red-600">{fieldErrors.email}</p>
+              <p className="text-xs text-rose-600">{fieldErrors.email}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -86,21 +90,25 @@ export default function LoginPage() {
               id="password"
               type="password"
               autoComplete="current-password"
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
             {fieldErrors.password && (
-              <p className="text-xs text-red-600">{fieldErrors.password}</p>
+              <p className="text-xs text-rose-600">{fieldErrors.password}</p>
             )}
           </div>
-          <Button type="submit" className="w-full" disabled={submitting}>
+          <Button type="submit" className="w-full" size="lg" disabled={submitting}>
             {submitting ? "Signing in…" : "Sign in"}
           </Button>
-          <p className="text-center text-sm text-slate-500">
-            No account?{" "}
-            <Link href="/register" className="font-medium text-slate-900 underline">
-              Register
+          <p className="text-center text-sm text-[var(--muted)]">
+            New here?{" "}
+            <Link
+              href="/register"
+              className="font-bold text-violet-700 underline decoration-violet-300 underline-offset-4"
+            >
+              Create an account
             </Link>
           </p>
         </form>

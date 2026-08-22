@@ -1,23 +1,121 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f6f0ff;
+  --foreground: #1e1035;
+  --card: rgba(255, 255, 255, 0.78);
+  --card-border: rgba(124, 58, 237, 0.12);
+  --muted: #6b5a7e;
+  --primary: #7c3aed;
+  --primary-soft: #f3e8ff;
+  --accent: #fb7185;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --ring: rgba(124, 58, 237, 0.35);
+  --shadow: 0 18px 50px rgba(88, 28, 135, 0.12);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
 }
 
 * {
   box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  color: var(--foreground);
+  font-family: var(--font-body), system-ui, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, #ffd6e8 0%, transparent 55%),
+    radial-gradient(900px 500px at 95% 5%, #c4b5fd 0%, transparent 50%),
+    radial-gradient(800px 500px at 50% 110%, #a5f3fc 0%, transparent 45%),
+    linear-gradient(180deg, #faf5ff 0%, #f0f9ff 55%, #fff7ed 100%);
+  background-attachment: fixed;
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+.glass-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.mesh-orb {
+  pointer-events: none;
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(40px);
+  opacity: 0.55;
+}
+
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-floaty {
+  animation: floaty 4.5s ease-in-out infinite;
+}
+
+.animate-wiggle {
+  animation: wiggle 2.8s ease-in-out infinite;
+}
+
+.animate-fade-up {
+  animation: fade-up 0.45s ease-out both;
+}
+
+.stagger-1 {
+  animation-delay: 0.05s;
+}
+.stagger-2 {
+  animation-delay: 0.12s;
+}
+.stagger-3 {
+  animation-delay: 0.2s;
+}
+.stagger-4 {
+  animation-delay: 0.28s;
 }
