@@ -1,3 +1,16 @@
+/**
+ * Softboard pin layout — client-only state (intentional).
+ *
+ * Positions are NOT stored in Postgres. Each browser keeps freeform
+ * drag layout in localStorage so the playground stays light and private.
+ *
+ * Storage key: `noteshare.softboard.v1:{userId}:{tab}`
+ *   - Scoped per signed-in user and per tab (Mine vs Everyone’s).
+ *   - Values: `{ [pinId]: { x, y, rot } }`, pruned when pins disappear.
+ *
+ * Desktop: freeform drag + Arrange (`layoutChronological`).
+ * Mobile list mode ignores stored positions and sorts chronologically in UI.
+ */
 import type { BoardPin } from "@note-share/shared";
 
 export type PinPosition = {
@@ -14,7 +27,8 @@ const GAP_X = 20;
 const GAP_Y = 24;
 const PAD = 20;
 
-function key(userId: string, tab: "mine" | "feed") {
+/** localStorage key for a user’s softboard layout on one tab */
+export function softboardStorageKey(userId: string, tab: "mine" | "feed") {
   return `noteshare.softboard.v1:${userId}:${tab}`;
 }
 
@@ -24,7 +38,7 @@ export function loadPositions(
 ): PositionMap {
   if (typeof window === "undefined") return {};
   try {
-    const raw = localStorage.getItem(key(userId, tab));
+    const raw = localStorage.getItem(softboardStorageKey(userId, tab));
     if (!raw) return {};
     const parsed = JSON.parse(raw) as PositionMap;
     return parsed && typeof parsed === "object" ? parsed : {};
@@ -39,7 +53,7 @@ export function savePositions(
   map: PositionMap
 ) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(key(userId, tab), JSON.stringify(map));
+  localStorage.setItem(softboardStorageKey(userId, tab), JSON.stringify(map));
 }
 
 /** Columns by viewport width: phone list-ish (1–2), tablet 3, desktop 4–5 */

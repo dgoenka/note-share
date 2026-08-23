@@ -1,3 +1,15 @@
+/**
+ * Softboard board API — title-only pins (never note content).
+ *
+ * - GET /board/mine  → notes you own (all access types)
+ * - GET /board/feed  → others’ PUBLIC notes + RESTRICTED where your email
+ *                      is on note_allowed_emails (PASSWORD notes of others
+ *                      stay off the feed by design)
+ *
+ * Pagination is keyset `(createdAt, id)` via board-cursor.ts (not OFFSET).
+ * Full content is loaded only when a pin is opened: GET /notes/:id (owner)
+ * or POST /share/:token/open|unlock (recipients).
+ */
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import {

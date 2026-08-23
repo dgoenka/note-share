@@ -60,6 +60,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
   const isAuthPage = pathname === "/login" || pathname === "/register";
   const isSharePage = pathname?.startsWith("/share/");
+  // Softboard chrome: full-viewport corkboard + centered Mine/All tabs.
+  // Tab query (`?tab=feed`) remounts <Softboard key={tab}> on the home page.
   const isHomeBoard = pathname === "/" && !!user && !loading;
   const isSoftboardChrome = isHomeBoard;
 

@@ -7,10 +7,19 @@ Job-application POC: create notes and share them with **expiring** links (one-ti
 **Repo:** https://github.com/dgoenka/note-share  
 **Assignment live (`main`):** https://note-share-ruby.vercel.app · API https://api-production-5dd68.up.railway.app  
 
-> **Playground (`softboard` branch):** corkboard UI with My / Everyone’s tabs, drag-to-pin, cursor pagination.
-> - Softboard web: https://note-share-softboard.vercel.app
-> - Softboard API: https://api-production-26060.up.railway.app
-> Assignment demo on `main` is unchanged: https://note-share-ruby.vercel.app
+## Softboard playground (`softboard` branch)
+
+Isolated fun layer on the same share/security model — **does not replace** the assignment demo on `main`.
+
+| | |
+|--|--|
+| **What** | Corkboard home: title-only post-its, **Mine** / **Everyone’s** tabs, desktop drag + Arrange, mobile chronological list, `/profile` overflow menu |
+| **Why** | Show adaptive UX + cursor pagination without risking the Peacock submission deploy |
+| **How** | Pins never include `content`. Open loads `GET /notes/:id` (owner) or share open/unlock. Layout lives in browser `localStorage` keyed per user + tab (`apps/web/src/lib/softboard-positions.ts`) — not Postgres. Board lists use keyset cursors on `GET /board/mine` and `GET /board/feed`. |
+
+- Softboard web: https://note-share-softboard.vercel.app  
+- Softboard API: https://api-production-26060.up.railway.app  
+- Assignment demo on `main` stays: https://note-share-ruby.vercel.app  
 
 ## Quick demo path
 
@@ -26,6 +35,7 @@ Register any user (e.g. `demo@example.com` / `password123`).
 pnpm install && pnpm --filter @note-share/shared build
 pnpm --filter @note-share/api db:push
 pnpm test          # API integration tests (needs local Postgres)
+pnpm test:web      # Softboard Vitest + Testing Library
 pnpm dev:api       # :4000
 pnpm dev:web       # :3000
 ```
@@ -73,10 +83,15 @@ Code: token/key minting in `apps/api/src/routes/notes.ts`; claim SQL in `apps/ap
 | Revoked / expired / already used | 410; no claim | `pnpm test` |
 | RESTRICTED wrong email | 403; `viewCount` unchanged | `pnpm test` |
 | GET status | never increments count | `pnpm test` |
+| Board mine | own notes, title-only pins | `pnpm test` (`board.test.ts`) |
+| Board feed | PUBLIC + allowlisted RESTRICTED; excludes own | `pnpm test` |
+| Board cursor | keyset pagination on mine | `pnpm test` |
+| Softboard UX | positions scoped per user/tab; desktop Arrange; mobile list; dialog open/close | `pnpm test:web` |
 
 ```bash
-pnpm test
-# 6 tests in apps/api/src/routes/share.test.ts
+pnpm test        # share + board API (apps/api)
+pnpm test:web    # softboard positions + Softboard / PostItDialog
+pnpm test:all    # both
 ```
 
 ### View count rules
@@ -126,7 +141,8 @@ note_allowed_emails(noteId, email)  -- RESTRICTED only
 | Route | Role |
 |-------|------|
 | `/register`, `/login` | Auth |
-| `/` | Note list |
+| `/` | Softboard corkboard when logged in (`?tab=feed` = Everyone’s) |
+| `/profile` | Account summary + note count |
 | `/notes/new` | Create (share + access options) |
 | `/notes/[id]` | Copy link / key once / revoke |
 | `/share/[token]` | Open, unlock, or sign-in for allowlist |
@@ -153,6 +169,7 @@ note_allowed_emails(noteId, email)  -- RESTRICTED only
 - **No structured observability** — logs to stdout only.
 - **Timestamp-without-tz** Prisma defaults — claim SQL uses DB `NOW()`; prefer `timestamptz` in production.
 - **Prod DB network** — Aiven must allow Railway egress (`0.0.0.0/0` is fine for a short-lived POC).
+- **Softboard pin layout is client-only** — positions live in per-browser `localStorage` (per user + tab), not the server; clearing site data resets the freeform layout.
 
 ---
 
@@ -176,6 +193,7 @@ note_allowed_emails(noteId, email)  -- RESTRICTED only
 | POST | `/auth/register`, `/auth/login` | — |
 | GET | `/auth/me` | JWT |
 | GET/POST | `/notes`, `/notes/:id`, `/notes/:id/revoke` | JWT |
+| GET | `/board/mine`, `/board/feed` | JWT (title-only pins; softboard) |
 | GET | `/share/:token` | optional JWT |
 | POST | `/share/:token/open` | optional JWT (required if RESTRICTED) |
 | POST | `/share/:token/unlock` | — |
@@ -185,12 +203,15 @@ note_allowed_emails(noteId, email)  -- RESTRICTED only
 ## Scripts
 
 ```bash
-pnpm test             # API share-route integration tests
+pnpm test             # API share + board integration tests
+pnpm test:web         # Softboard Vitest / Testing Library
+pnpm test:all         # API + web
 pnpm dev:api          # :4000
 pnpm dev:web          # :3000
 pnpm db:push
 pnpm typecheck
 ```
+
 
 ## License
 
