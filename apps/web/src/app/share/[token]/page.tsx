@@ -260,8 +260,8 @@ export default function SharePage() {
   if (status.requiresAuth) {
     return (
       <Card className="animate-fade-up mx-auto max-w-md overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-stone-200 bg-gradient-to-r from-violet-50 to-cyan-50 px-6 py-4">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-cyan-500 text-white shadow-md">
+        <div className="flex items-center gap-3 border-b border-stone-200 bg-gradient-to-r from-[var(--primary-soft)] to-[#efe6d8] px-6 py-4">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--primary)] text-[#faf6ef] shadow-md">
             <Users className="h-5 w-5" />
           </span>
           <div className="min-w-0">
@@ -285,7 +285,7 @@ export default function SharePage() {
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Link
                   href={`/login?next=${encodeURIComponent(`/share/${shareToken}`)}`}
-                  className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 sm:w-auto"
+                  className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-[var(--primary)] px-4 text-sm font-semibold text-[#faf6ef] shadow-lg shadow-stone-900/20 sm:w-auto"
                 >
                   Sign in
                 </Link>

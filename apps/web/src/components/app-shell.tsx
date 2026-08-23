@@ -71,9 +71,9 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     >
       {!isSoftboardChrome && (
         <>
-          <div className="mesh-orb -left-16 top-24 h-40 w-40 bg-fuchsia-300/50 sm:h-56 sm:w-56" />
-          <div className="mesh-orb right-[-4rem] top-10 h-44 w-44 bg-violet-300/40 sm:h-64 sm:w-64" />
-          <div className="mesh-orb bottom-10 left-1/3 hidden h-48 w-48 bg-cyan-200/40 sm:block" />
+          <div className="mesh-orb -left-16 top-24 h-40 w-40 bg-amber-200/45 sm:h-56 sm:w-56" />
+          <div className="mesh-orb right-[-4rem] top-10 h-44 w-44 bg-orange-100/50 sm:h-64 sm:w-64" />
+          <div className="mesh-orb bottom-10 left-1/3 hidden h-48 w-48 bg-stone-200/40 sm:block" />
         </>
       )}
 

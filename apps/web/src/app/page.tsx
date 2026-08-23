@@ -15,8 +15,8 @@ function Landing() {
   return (
     <div className="space-y-8">
       <section className="animate-fade-up relative overflow-hidden rounded-3xl border border-violet-200/60 bg-white/60 p-5 shadow-[var(--shadow)] backdrop-blur-xl sm:rounded-[2rem] sm:p-10">
-        <div className="mesh-orb -right-10 -top-10 h-32 w-32 bg-fuchsia-300/60 sm:h-40 sm:w-40" />
-        <div className="mesh-orb bottom-0 left-10 h-24 w-24 bg-cyan-200/50 sm:h-28 sm:w-28" />
+        <div className="mesh-orb -right-10 -top-10 h-32 w-32 bg-amber-200/50 sm:h-40 sm:w-40" />
+        <div className="mesh-orb bottom-0 left-10 h-24 w-24 bg-orange-100/60 sm:h-28 sm:w-28" />
         <div className="relative space-y-4 sm:space-y-5">
           <Badge>
             <Sparkles className="mr-1 h-3 w-3" />
