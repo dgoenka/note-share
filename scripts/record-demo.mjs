@@ -1,13 +1,16 @@
 /**
- * Automated demo recording for the NoteShare POC.
- * Usage: node scripts/record-demo.mjs
- * Requires local web :3000 and API :4000 (or set BASE_URL).
+ * Softboard demo recording for NoteShare (corkboard + share security).
+ *
+ * Usage:
+ *   BASE_URL=https://note-share-ruby.vercel.app node scripts/record-demo.mjs
+ *   # or local: web :3000 + api :4000
+ *   node scripts/record-demo.mjs
  */
 import { chromium } from "playwright";
 import { mkdirSync, existsSync, renameSync } from "node:fs";
 import { join } from "node:path";
 
-const BASE = process.env.BASE_URL || "http://localhost:3000";
+const BASE = (process.env.BASE_URL || "http://localhost:3000").replace(/\/$/, "");
 const OUT_DIR = join(process.cwd(), "demo-output");
 const email = `demo.video.${Date.now()}@example.com`;
 const password = "password123";
@@ -30,8 +33,8 @@ async function caption(page, text) {
         right: "16px",
         bottom: "16px",
         zIndex: "999999",
-        background: "rgba(30,16,53,0.92)",
-        color: "#fff",
+        background: "rgba(55, 35, 20, 0.92)",
+        color: "#faf6ef",
         fontFamily: "system-ui, sans-serif",
         fontSize: "15px",
         fontWeight: "600",
@@ -44,7 +47,22 @@ async function caption(page, text) {
     }
     el.textContent = t;
   }, text);
-  await pause(page, 1200);
+  await pause(page, 1400);
+}
+
+async function ensureLoggedIn(page) {
+  await page.goto(`${BASE}/`);
+  await pause(page, 600);
+  const needsAuth =
+    (await page.getByRole("link", { name: /login/i }).count()) > 0 ||
+    (await page.getByRole("button", { name: /create account|get started|sign in|join/i }).count()) >
+      0;
+  if (!needsAuth) return;
+  await page.goto(`${BASE}/login`);
+  await page.fill("#email", email);
+  await page.fill("#password", password);
+  await page.getByRole("button", { name: /sign in/i }).click();
+  await page.waitForURL(/\/(\?|$)/, { timeout: 20000 });
 }
 
 async function main() {
@@ -55,7 +73,7 @@ async function main() {
   });
   const page = await context.newPage();
 
-  // --- Register ---
+  // --- Register → softboard ---
   await page.goto(`${BASE}/register`);
   await caption(page, "1) Create an account");
   await page.fill("#name", "Demo Reviewer");
@@ -63,149 +81,109 @@ async function main() {
   await page.fill("#password", password);
   await pause(page, 400);
   await page.getByRole("button", { name: /create account/i }).click();
-  await page.waitForURL(/\/$/, { timeout: 15000 });
-  await caption(page, "Signed in — ready to create notes");
+  await page.waitForURL(/\/(\?|$)/, { timeout: 20000 });
+  await caption(page, "Softboard home — Mine / Everyone’s corkboard");
+  await pause(page, 1200);
 
-  // --- Public time-based note ---
-  await page.goto(`${BASE}/notes/new`);
-  await caption(page, "2) Create a public time-based note");
-  await page.fill("#title", "Public kickoff note");
-  await page.fill("#content", "Hello reviewers — this is a public share link demo.");
+  // --- New note from FAB ---
+  await caption(page, "2) Pin a new public note");
+  await page.getByRole("button", { name: /new note/i }).click();
+  await page.waitForURL(/\/notes\/new/, { timeout: 15000 });
+  await page.fill("#title", "Kickoff sticky");
+  await page.fill(
+    "#content",
+    "Hello from the softboard — title-only pins, full content on open."
+  );
   await page.getByText("Time-based", { exact: true }).click();
   await page.getByText("Public", { exact: true }).click();
-  // expiry is prefilled
   await pause(page, 500);
   await page.getByRole("button", { name: /create & generate share link/i }).click();
-  await page.waitForURL(/\/notes\//, { timeout: 15000 });
-  await caption(page, "Share link generated — copying it");
-
+  await page.waitForURL(/\/notes\//, { timeout: 20000 });
+  await caption(page, "Share link ready — back to the board");
   const publicLink = await page.locator('a[href*="/share/"]').first().getAttribute("href");
   if (!publicLink) throw new Error("No public share link found");
-  await pause(page, 800);
+  await pause(page, 900);
 
-  // Open public in new page (same context = video continues? Actually video is per page)
-  // Stay in same page for continuous recording
-  await page.goto(publicLink);
-  await caption(page, "3) Public share opens without a password");
-  await page.waitForSelector("text=Public kickoff note", { timeout: 15000 });
-  await pause(page, 1500);
+  await page.goto(`${BASE}/`);
+  await page.waitForSelector("text=Kickoff sticky", { timeout: 20000 });
+  await caption(page, "3) Note appears as a title-only post-it");
+  await pause(page, 1000);
 
-  // Back to app — login again if needed (same origin, localStorage may persist)
-  await page.goto(BASE);
-  await pause(page, 800);
-  // If logged out somehow, login
-  if (await page.getByRole("button", { name: /create account|sign in/i }).count()) {
-    await page.goto(`${BASE}/login`);
-    await page.fill("#email", email);
-    await page.fill("#password", password);
-    await page.getByRole("button", { name: /sign in/i }).click();
-    await page.waitForURL(/\/$/, { timeout: 15000 });
+  // Arrange
+  const arrange = page.getByRole("button", { name: /arrange notes in order/i });
+  if (await arrange.count()) {
+    await caption(page, "Arrange — chronological tidy-up on desktop");
+    await arrange.click();
+    await pause(page, 1200);
   }
 
-  // --- Password note ---
-  await page.goto(`${BASE}/notes/new`);
-  await caption(page, "4) Create a password-protected note");
-  await page.fill("#title", "Password protected note");
-  await page.fill("#content", "Only unlocks with the generated access key.");
-  await page.getByText("Time-based", { exact: true }).click();
-  await page.getByText("Password-protected", { exact: true }).click();
-  await page.getByRole("button", { name: /create & generate share link/i }).click();
-  await page.waitForURL(/\/notes\//, { timeout: 15000 });
-  await caption(page, "Access key shown once — save it now");
-
-  const keyEl = page.locator("code").first();
-  await keyEl.waitFor({ timeout: 10000 });
-  const accessKey = (await keyEl.textContent())?.trim();
-  const passwordLink = await page.locator('a[href*="/share/"]').first().getAttribute("href");
-  if (!accessKey || !passwordLink) throw new Error("Missing password note artifacts");
+  // Open post-it dialog
+  await caption(page, "4) Open a pin — content loads only then");
+  await page.getByText("Kickoff sticky", { exact: true }).click();
+  await page.waitForSelector("text=Hello from the softboard", { timeout: 15000 });
   await pause(page, 1500);
+  await page.getByRole("button", { name: /^close$/i }).click();
+  await pause(page, 600);
 
-  await page.goto(passwordLink);
-  await caption(page, "5) Wrong password — should fail (no view count bump)");
-  await page.fill("#password", "definitely-wrong");
-  await page.getByRole("button", { name: /^unlock$/i }).click();
-  await pause(page, 1500);
-
-  await caption(page, "6) Correct access key — unlocks successfully");
-  await page.fill("#password", accessKey);
-  await page.getByRole("button", { name: /^unlock$/i }).click();
-  await page.waitForSelector("text=Password protected note", { timeout: 15000 });
-  await pause(page, 1500);
-
-  // --- One-time ---
-  await page.goto(BASE);
-  if (await page.locator('a[href="/login"]').count()) {
-    await page.goto(`${BASE}/login`);
-    await page.fill("#email", email);
-    await page.fill("#password", password);
-    await page.getByRole("button", { name: /sign in/i }).click();
-    await page.waitForURL(/\/$/, { timeout: 15000 });
+  // Everyone’s tab
+  await caption(page, "5) Everyone’s — public + allowlisted notes from others");
+  const allTab = page.getByRole("tab", { name: /all|everyone/i });
+  if (await allTab.count()) {
+    await allTab.click();
+    await pause(page, 1600);
   }
+  const mineTab = page.getByRole("tab", { name: /mine|my notes/i });
+  if (await mineTab.count()) await mineTab.click();
+  await pause(page, 800);
 
+  // --- Public share open (incognito-style: clear storage via new context page still same video?)
+  // Stay on same page for continuous video.
+  await page.goto(publicLink.startsWith("http") ? publicLink : `${BASE}${publicLink}`);
+  await caption(page, "6) Public share link opens without login");
+  await page.waitForSelector("text=Kickoff sticky", { timeout: 15000 });
+  await pause(page, 1400);
+
+  // --- One-time security beat ---
+  await ensureLoggedIn(page);
   await page.goto(`${BASE}/notes/new`);
-  await caption(page, "7) Create a one-time public note");
+  await caption(page, "7) One-time link — security still on the same stack");
   await page.fill("#title", "One-time link");
   await page.fill("#content", "This should only open once.");
   await page.getByText("One-time", { exact: true }).click();
   await page.getByText("Public", { exact: true }).click();
   await page.getByRole("button", { name: /create & generate share link/i }).click();
-  await page.waitForURL(/\/notes\//, { timeout: 15000 });
+  await page.waitForURL(/\/notes\//, { timeout: 20000 });
   const oneTimeLink = await page.locator('a[href*="/share/"]').first().getAttribute("href");
   if (!oneTimeLink) throw new Error("No one-time link");
+  await pause(page, 800);
 
-  await page.goto(oneTimeLink);
+  await page.goto(oneTimeLink.startsWith("http") ? oneTimeLink : `${BASE}${oneTimeLink}`);
   await caption(page, "First open succeeds");
   await page.waitForSelector("text=One-time link", { timeout: 15000 });
   await pause(page, 1200);
 
-  await page.goto(oneTimeLink);
+  await page.goto(oneTimeLink.startsWith("http") ? oneTimeLink : `${BASE}${oneTimeLink}`);
   await caption(page, "Second open fails — already used");
-  await page.waitForSelector("text=/already used|unavailable/i", { timeout: 15000 });
-  await pause(page, 1500);
+  await page.waitForSelector("text=/already used|unavailable|expired|revoked/i", {
+    timeout: 15000,
+  });
+  await pause(page, 1600);
 
-  // --- Revoke ---
-  await page.goto(BASE);
-  if (await page.locator('a[href="/login"]').count()) {
-    await page.goto(`${BASE}/login`);
-    await page.fill("#email", email);
-    await page.fill("#password", password);
-    await page.getByRole("button", { name: /sign in/i }).click();
-    await page.waitForURL(/\/$/, { timeout: 15000 });
-  }
-
-  await page.goto(`${BASE}/notes/new`);
-  await caption(page, "8) Force invalidate / revoke");
-  await page.fill("#title", "Will be revoked");
-  await page.fill("#content", "This link will be force-invalidated.");
-  await page.getByText("Time-based", { exact: true }).click();
-  await page.getByText("Public", { exact: true }).click();
-  await page.getByRole("button", { name: /create & generate share link/i }).click();
-  await page.waitForURL(/\/notes\//, { timeout: 15000 });
-  const revokeLink = await page.locator('a[href*="/share/"]').first().getAttribute("href");
-
-  page.once("dialog", (d) => d.accept());
-  await page.getByRole("button", { name: /force invalidate|revoke/i }).click();
-  await caption(page, "Share link revoked by owner");
-  await pause(page, 1000);
-
-  await page.goto(revokeLink);
-  await caption(page, "Revoked link is unavailable");
-  await page.waitForSelector("text=/revoked|unavailable/i", { timeout: 15000 });
-  await pause(page, 1800);
-
-  await page.goto(BASE);
-  await caption(page, "Done — NoteShare POC demo");
-  await pause(page, 2000);
+  // Finale on softboard
+  await ensureLoggedIn(page);
+  await page.goto(`${BASE}/`);
+  await caption(page, "Done — NoteShare softboard");
+  await pause(page, 2200);
 
   const videoPath = await page.video().path();
   await context.close();
   await browser.close();
 
-  const finalPath = join(OUT_DIR, "note-share-demo.webm");
+  const finalPath = join(OUT_DIR, "note-share-softboard-demo.webm");
   if (existsSync(videoPath)) {
     renameSync(videoPath, finalPath);
   }
-  console.log(JSON.stringify({ ok: true, video: finalPath, email }, null, 2));
+  console.log(JSON.stringify({ ok: true, video: finalPath, email, base: BASE }, null, 2));
 }
 
 main().catch((err) => {

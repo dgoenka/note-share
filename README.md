@@ -21,12 +21,19 @@ Share-link create → open → claim flows are unchanged; softboard is the logge
 ## Quick demo path
 
 1. Open https://note-share-ruby.vercel.app and register (or sign in).
-2. **New note** → pick share type + access type → create.
-3. On the note page: **copy share link** (and **access key** if password-protected — shown once).
-4. Open the link in a private/incognito window.
-5. Optional: create a one-time note and open it twice (second open should fail); try **revoke**.
+2. Softboard home: **Mine** / **Everyone’s** corkboard → **New note** FAB.
+3. Create a note → pin appears title-only → open it for content; try **Arrange** on desktop.
+4. Copy the share link (and **access key** if password-protected — shown once); open in a private window.
+5. Optional: one-time note opened twice (second fails); **revoke** from the note page.
 
 Register any user (e.g. `demo@example.com` / `password123`).
+
+Automated walkthrough video (WebM):
+
+```bash
+BASE_URL=https://note-share-ruby.vercel.app node scripts/record-demo.mjs
+# → demo-output/note-share-softboard-demo.webm
+```
 
 ```
 pnpm install && pnpm --filter @note-share/shared build
