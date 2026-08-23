@@ -7,7 +7,10 @@ Job-application POC: create notes and share them with **expiring** links (one-ti
 **Repo:** https://github.com/dgoenka/note-share  
 **Assignment live (`main`):** https://note-share-ruby.vercel.app · API https://api-production-5dd68.up.railway.app  
 
-> **Playground:** branch `softboard` adds a corkboard UI (draggable post-its, My / Everyone’s tabs, cursor pagination). It is deployed separately so the Peacock assignment demo on `main` stays unchanged.
+> **Playground (`softboard` branch):** corkboard UI with My / Everyone’s tabs, drag-to-pin, cursor pagination.
+> - Softboard web: https://note-share-softboard.vercel.app
+> - Softboard API: https://api-production-26060.up.railway.app
+> Assignment demo on `main` is unchanged: https://note-share-ruby.vercel.app
 
 ## Quick demo path
 
