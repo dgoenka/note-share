@@ -2,7 +2,8 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { loginSchema } from "@note-share/shared";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -17,11 +18,26 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
-import { LoadingOverlay } from "@/components/ui/loading-block";
+import { LoadingBlock, LoadingOverlay } from "@/components/ui/loading-block";
+
+function safeNextPath(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/";
+  return raw;
+}
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoadingBlock label="Loading…" />}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const { setSession } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = safeNextPath(searchParams.get("next"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +65,7 @@ export default function LoginPage() {
     try {
       const res = await api.login(parsed.data);
       setSession(res.token, res.user);
-      router.replace("/");
+      router.replace(nextPath);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Login failed");
       setSubmitting(false);
@@ -109,7 +125,11 @@ export default function LoginPage() {
             <p className="text-center text-sm text-[var(--muted)]">
               New here?{" "}
               <Link
-                href="/register"
+                href={
+                  nextPath !== "/"
+                    ? `/register?next=${encodeURIComponent(nextPath)}`
+                    : "/register"
+                }
                 className={
                   submitting
                     ? "pointer-events-none font-bold text-violet-400"

@@ -24,13 +24,16 @@ A **Note** is owned by a **User**. Creating a note always creates a **share link
 | Field | Role |
 |-------|------|
 | `shareType` | `ONE_TIME` or `TIME_BASED` |
-| `accessType` | `PUBLIC` or `PASSWORD` |
+| `accessType` | `PUBLIC`, `PASSWORD`, or **`RESTRICTED`** (stretch) |
 | `shareToken` | Random 32-byte base64url string in the URL |
 | `accessKeyHash` | bcrypt of server-generated key (PASSWORD only) |
+| `allowedEmails` | Allowlist rows for RESTRICTED notes |
 | `expiresAt` | Hard stop for TIME_BASED (optional extra for others) |
 | `revokedAt` | Owner force-kill |
 | `usedAt` | Set when ONE_TIME is successfully opened |
 | `viewCount` | Successful opens only |
+
+**RESTRICTED (stretch):** recipient must be logged in; `user.email` must match an allowlist entry. Wrong account → **403**, no view bump.
 
 ---
 

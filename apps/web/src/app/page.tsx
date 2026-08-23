@@ -12,6 +12,7 @@ import {
   Plus,
   Sparkles,
   Timer,
+  Users,
 } from "lucide-react";
 import type { NoteDetail } from "@note-share/shared";
 import { useAuth } from "@/lib/auth-context";
@@ -224,12 +225,16 @@ export default function HomePage() {
                           <span className="inline-flex items-center gap-1 rounded-full bg-fuchsia-50 px-2 py-0.5 font-semibold text-fuchsia-700">
                             {note.accessType === "PUBLIC" ? (
                               <Eye className="h-3 w-3" />
-                            ) : (
+                            ) : note.accessType === "PASSWORD" ? (
                               <Lock className="h-3 w-3" />
+                            ) : (
+                              <Users className="h-3 w-3" />
                             )}
                             {note.accessType === "PUBLIC"
                               ? "Public"
-                              : "Password"}
+                              : note.accessType === "PASSWORD"
+                                ? "Password"
+                                : "Allowlist"}
                           </span>
                           <span>
                             {note.viewCount} view

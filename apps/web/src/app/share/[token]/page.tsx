@@ -1,11 +1,13 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
-import { KeyRound, Sparkles } from "lucide-react";
+import { KeyRound, Sparkles, Users } from "lucide-react";
 import type { ShareStatus, SharedNoteView } from "@note-share/shared";
 import { unlockShareSchema } from "@note-share/shared";
 import { api, ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +24,8 @@ import { formatDateTime } from "@/lib/utils";
 
 export default function SharePage() {
   const params = useParams<{ token: string }>();
-  const token = params.token;
+  const shareToken = params.token;
+  const { user, token: authToken, loading: authLoading } = useAuth();
 
   const [status, setStatus] = useState<ShareStatus | null>(null);
   const [view, setView] = useState<SharedNoteView | null>(null);
@@ -32,11 +35,11 @@ export default function SharePage() {
   const [opening, setOpening] = useState(false);
 
   const loadStatus = useCallback(async () => {
-    if (!token) return;
+    if (!shareToken) return;
     setLoading(true);
     setError(null);
     try {
-      const s = await api.shareStatus(token);
+      const s = await api.shareStatus(shareToken, authToken);
       setStatus(s);
     } catch (err) {
       setError(
@@ -45,22 +48,29 @@ export default function SharePage() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [shareToken, authToken]);
 
   useEffect(() => {
+    if (authLoading) return;
     void loadStatus();
-  }, [loadStatus]);
+  }, [loadStatus, authLoading]);
 
+  // Auto-open PUBLIC (and RESTRICTED when already allowed)
   useEffect(() => {
-    if (!status || !token || view) return;
-    if (!status.valid || status.requiresPassword) return;
+    if (authLoading || !status || !shareToken || view) return;
+    if (!status.valid) return;
+    if (status.requiresPassword) return;
+    if (status.requiresAuth) {
+      if (!authToken) return;
+      if (status.viewerAllowed !== true) return;
+    }
 
     let cancelled = false;
     (async () => {
       setOpening(true);
       setError(null);
       try {
-        const opened = await api.openShare(token);
+        const opened = await api.openShare(shareToken, authToken);
         if (!cancelled) setView(opened);
       } catch (err) {
         if (!cancelled) {
@@ -77,11 +87,11 @@ export default function SharePage() {
     return () => {
       cancelled = true;
     };
-  }, [status, token, view, loadStatus]);
+  }, [status, shareToken, view, authToken, authLoading, loadStatus]);
 
   async function onUnlock(e: FormEvent) {
     e.preventDefault();
-    if (!token || opening) return;
+    if (!shareToken || opening) return;
     setError(null);
 
     const parsed = unlockShareSchema.safeParse({ password });
@@ -92,7 +102,7 @@ export default function SharePage() {
 
     setOpening(true);
     try {
-      const opened = await api.unlockShare(token, parsed.data.password);
+      const opened = await api.unlockShare(shareToken, parsed.data.password);
       setView(opened);
     } catch (err) {
       setError(
@@ -105,7 +115,21 @@ export default function SharePage() {
     }
   }
 
-  if (loading) {
+  async function openRestricted() {
+    if (!shareToken || !authToken || opening) return;
+    setOpening(true);
+    setError(null);
+    try {
+      const opened = await api.openShare(shareToken, authToken);
+      setView(opened);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to open share");
+      void loadStatus();
+      setOpening(false);
+    }
+  }
+
+  if (authLoading || loading) {
     return <LoadingBlock label="Peeking at this share link…" />;
   }
 
@@ -123,7 +147,11 @@ export default function SharePage() {
           <CardDescription>
             {view.shareType === "ONE_TIME" ? "One-time" : "Time-based"}
             {" · "}
-            {view.accessType === "PUBLIC" ? "Public" : "Password-protected"}
+            {view.accessType === "PUBLIC"
+              ? "Public"
+              : view.accessType === "PASSWORD"
+                ? "Password-protected"
+                : "Email allowlist"}
             {view.expiresAt
               ? ` · Expires ${formatDateTime(view.expiresAt)}`
               : ""}
@@ -224,6 +252,79 @@ export default function SharePage() {
               </fieldset>
             </form>
           </LoadingOverlay>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (status.requiresAuth) {
+    return (
+      <Card className="animate-fade-up mx-auto max-w-md overflow-hidden">
+        <div className="flex items-center gap-3 border-b border-violet-100 bg-gradient-to-r from-violet-50 to-cyan-50 px-6 py-4">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-cyan-500 text-white shadow-md">
+            <Users className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
+              Restricted
+            </p>
+            <p className="truncate font-display text-lg font-semibold">
+              {status.title || "Allowlisted note"}
+            </p>
+          </div>
+        </div>
+        <CardContent className="space-y-4 pt-6">
+          {error && <Alert variant="destructive">{error}</Alert>}
+
+          {!user && (
+            <>
+              <p className="text-sm text-[var(--muted)]">
+                This note is limited to specific emails. Sign in with an
+                allowlisted account to open it.
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Link
+                  href={`/login?next=${encodeURIComponent(`/share/${shareToken}`)}`}
+                  className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-500 px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 sm:w-auto"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href={`/register?next=${encodeURIComponent(`/share/${shareToken}`)}`}
+                  className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-violet-200/80 bg-white/70 px-4 text-sm font-semibold text-violet-950 sm:w-auto"
+                >
+                  Create account
+                </Link>
+              </div>
+            </>
+          )}
+
+          {user && status.viewerAllowed === false && (
+            <Alert variant="destructive">
+              You&apos;re signed in as <strong>{user.email}</strong>, but that
+              address isn&apos;t on this note&apos;s allowlist. View count was
+              not increased.
+            </Alert>
+          )}
+
+          {user && status.viewerAllowed === true && (
+            <LoadingOverlay active={opening} label="Opening…">
+              <div className="space-y-3">
+                <p className="text-sm text-[var(--muted)]">
+                  Signed in as <strong>{user.email}</strong> — you&apos;re on
+                  the list.
+                </p>
+                <Button
+                  className="w-full"
+                  size="lg"
+                  loading={opening}
+                  onClick={() => void openRestricted()}
+                >
+                  Open note
+                </Button>
+              </div>
+            </LoadingOverlay>
+          )}
         </CardContent>
       </Card>
     );

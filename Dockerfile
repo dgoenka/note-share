@@ -30,4 +30,5 @@ ENV NODE_ENV=production
 ENV PORT=4000
 EXPOSE 4000
 
-CMD ["pnpm", "--filter", "@note-share/api", "start"]
+# db push keeps Aiven/Postgres schema in sync on boot (POC-friendly)
+CMD ["sh", "-c", "pnpm --filter @note-share/api exec prisma db push && pnpm --filter @note-share/api start"]

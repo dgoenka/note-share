@@ -296,6 +296,22 @@ Production upgrades: Redis rate limits, CAPTCHA after N failures, temporary lock
 
 ---
 
+## Stretch: email allowlist (`RESTRICTED`)
+
+Beyond the brief’s Public / Password access types, notes can also be
+**restricted to a list of emails**. Recipients must **sign in** with an
+allowlisted address; the share link alone is not enough.
+
+| Piece | Behavior |
+|-------|----------|
+| Create | Owner picks **Email allowlist** and adds 1–25 emails |
+| Storage | `note_allowed_emails` (lowercase, unique per note) |
+| Status | `requiresAuth: true`; if Bearer present → `viewerAllowed` |
+| Open | JWT required; email must match allowlist; then same claim SQL |
+| Wrong account | **403**, view count unchanged |
+
+---
+
 ## Live deployment
 
 | Layer | URL |

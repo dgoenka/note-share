@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { registerSchema } from "@note-share/shared";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -17,11 +17,26 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
-import { LoadingOverlay } from "@/components/ui/loading-block";
+import { LoadingBlock, LoadingOverlay } from "@/components/ui/loading-block";
+
+function safeNextPath(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/";
+  return raw;
+}
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={<LoadingBlock label="Loading…" />}>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const { setSession } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = safeNextPath(searchParams.get("next"));
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -50,7 +65,7 @@ export default function RegisterPage() {
     try {
       const res = await api.register(parsed.data);
       setSession(res.token, res.user);
-      router.replace("/");
+      router.replace(nextPath);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Registration failed");
       setSubmitting(false);
@@ -125,7 +140,11 @@ export default function RegisterPage() {
             <p className="text-center text-sm text-[var(--muted)]">
               Already have an account?{" "}
               <Link
-                href="/login"
+                href={
+                  nextPath !== "/"
+                    ? `/login?next=${encodeURIComponent(nextPath)}`
+                    : "/login"
+                }
                 className={
                   submitting
                     ? "pointer-events-none font-bold text-violet-400"

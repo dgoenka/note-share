@@ -19,6 +19,8 @@ export interface NoteDetail {
   shareUrl: string;
   /** Plain access key — only present at creation time for PASSWORD notes */
   accessKey?: string | null;
+  /** Allowlist for RESTRICTED notes (owner view only) */
+  allowedEmails?: string[];
   expiresAt: string | null;
   revokedAt: string | null;
   usedAt: string | null;
@@ -43,11 +45,18 @@ export interface SharedNoteView {
 
 /**
  * Pre-unlock status for a share token.
- * Never leaks note content or whether a password is "almost right".
+ * Never leaks note content or the allowlist itself.
  */
 export interface ShareStatus {
   valid: boolean;
   requiresPassword: boolean;
+  /** True for RESTRICTED notes — recipient must be logged in */
+  requiresAuth?: boolean;
+  /**
+   * Present only when requiresAuth and the request included a Bearer token.
+   * true = email is on the allowlist; false = logged in but not allowed.
+   */
+  viewerAllowed?: boolean | null;
   reason?:
     | "NOT_FOUND"
     | "REVOKED"

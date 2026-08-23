@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   ACCESS_TYPES,
+  ALLOWED_EMAILS_MAX,
   EMAIL_MAX,
   NAME_MAX,
   NOTE_CONTENT_MAX,
@@ -13,17 +14,20 @@ import {
 export const shareTypeSchema = z.enum(SHARE_TYPES);
 export const accessTypeSchema = z.enum(ACCESS_TYPES);
 
+const emailSchema = z
+  .string()
+  .trim()
+  .email("Invalid email address")
+  .max(EMAIL_MAX)
+  .transform((e) => e.toLowerCase());
+
 export const registerSchema = z.object({
   name: z
     .string()
     .trim()
     .min(1, "Name is required")
     .max(NAME_MAX, `Name must be at most ${NAME_MAX} characters`),
-  email: z
-    .string()
-    .trim()
-    .email("Invalid email address")
-    .max(EMAIL_MAX),
+  email: emailSchema,
   password: z
     .string()
     .min(PASSWORD_MIN, `Password must be at least ${PASSWORD_MIN} characters`)
@@ -31,7 +35,7 @@ export const registerSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.string().trim().email("Invalid email address").max(EMAIL_MAX),
+  email: emailSchema,
   password: z.string().min(1, "Password is required").max(PASSWORD_MAX),
 });
 
@@ -40,6 +44,7 @@ export const loginSchema = z.object({
  * - TIME_BASED requires expiresAt in the future.
  * - ONE_TIME may omit expiresAt (or still allow a hard expiry as defence-in-depth).
  * - PASSWORD access: server generates the key; client must not send one.
+ * - RESTRICTED access: requires allowedEmails (1…ALLOWED_EMAILS_MAX), normalized lowercase.
  */
 export const createNoteSchema = z
   .object({
@@ -60,6 +65,8 @@ export const createNoteSchema = z
     accessType: accessTypeSchema,
     /** ISO 8601 datetime string. Required for TIME_BASED. */
     expiresAt: z.string().datetime({ offset: true }).optional().nullable(),
+    /** Required when accessType is RESTRICTED. Ignored otherwise. */
+    allowedEmails: z.array(emailSchema).max(ALLOWED_EMAILS_MAX).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.shareType === "TIME_BASED") {
@@ -69,15 +76,35 @@ export const createNoteSchema = z
           message: "Expiry date/time is required for time-based shares",
           path: ["expiresAt"],
         });
-        return;
+      } else {
+        const expiry = new Date(data.expiresAt);
+        if (Number.isNaN(expiry.getTime()) || expiry.getTime() <= Date.now()) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Expiry must be a valid date/time in the future",
+            path: ["expiresAt"],
+          });
+        }
       }
-      const expiry = new Date(data.expiresAt);
-      if (Number.isNaN(expiry.getTime()) || expiry.getTime() <= Date.now()) {
+    }
+
+    if (data.accessType === "RESTRICTED") {
+      const emails = data.allowedEmails ?? [];
+      if (emails.length < 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Expiry must be a valid date/time in the future",
-          path: ["expiresAt"],
+          message: "Add at least one email for restricted access",
+          path: ["allowedEmails"],
         });
+      } else {
+        const unique = new Set(emails);
+        if (unique.size !== emails.length) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Duplicate emails are not allowed",
+            path: ["allowedEmails"],
+          });
+        }
       }
     }
   });

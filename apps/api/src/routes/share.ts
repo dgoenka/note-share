@@ -7,9 +7,10 @@ import { prisma } from "../db.js";
 import { verifySecret } from "../lib/crypto.js";
 import { getNoteAccessibility } from "../lib/note-state.js";
 import { checkRateLimit } from "../lib/rate-limit.js";
+import { optionalAuth, type OptionalAuthVariables } from "../middleware/auth.js";
 import type { Note } from "@prisma/client";
 
-export const shareRoutes = new Hono();
+export const shareRoutes = new Hono<{ Variables: OptionalAuthVariables }>();
 
 function toSharedView(note: Note): SharedNoteView {
   return {
@@ -22,7 +23,10 @@ function toSharedView(note: Note): SharedNoteView {
   };
 }
 
-function statusFromNote(note: Note | null): ShareStatus {
+function baseStatus(
+  note: Note | null,
+  extras?: Partial<ShareStatus>
+): ShareStatus {
   if (!note) {
     return { valid: false, requiresPassword: false, reason: "NOT_FOUND" };
   }
@@ -31,45 +35,32 @@ function statusFromNote(note: Note | null): ShareStatus {
     return {
       valid: false,
       requiresPassword: false,
+      requiresAuth: note.accessType === "RESTRICTED",
       reason: state.reason,
       title: note.title,
       shareType: note.shareType,
       accessType: note.accessType,
       expiresAt: note.expiresAt?.toISOString() ?? null,
+      ...extras,
     };
   }
   return {
     valid: true,
     requiresPassword: note.accessType === "PASSWORD",
+    requiresAuth: note.accessType === "RESTRICTED",
     reason: "OK",
     title: note.title,
     shareType: note.shareType,
     accessType: note.accessType,
     expiresAt: note.expiresAt?.toISOString() ?? null,
+    ...extras,
   };
 }
 
 /**
- * Atomically claim a successful view.
- *
- * Race-condition strategy for ONE_TIME:
- *   UPDATE notes
- *   SET used_at = now(), view_count = view_count + 1
- *   WHERE id = $id
- *     AND revoked_at IS NULL
- *     AND used_at IS NULL
- *     AND (expires_at IS NULL OR expires_at > now())
- *   RETURNING *
- *
- * Only one concurrent request can win the `used_at IS NULL` check.
- * Losers get 0 rows → treat as ALREADY_USED.
- *
- * For TIME_BASED / PUBLIC (non one-time):
- *   same WHERE guards minus used_at, only increments view_count.
+ * Atomically claim a successful view (race-safe for ONE_TIME).
  */
 async function claimSuccessfulView(noteId: string): Promise<Note | null> {
-  // Use DB clock (NOW()) so timestamp-without-tz columns stay consistent with Prisma writes.
-  // Conditional UPDATE is the race-safe claim: only one concurrent ONE_TIME winner.
   return prisma.$transaction(async (tx) => {
     const rows = await tx.$queryRaw<Note[]>`
       UPDATE notes
@@ -104,18 +95,51 @@ async function claimSuccessfulView(noteId: string): Promise<Note | null> {
   });
 }
 
+async function isEmailAllowed(noteId: string, email: string): Promise<boolean> {
+  const row = await prisma.noteAllowedEmail.findUnique({
+    where: {
+      noteId_email: { noteId, email: email.toLowerCase() },
+    },
+    select: { id: true },
+  });
+  return row != null;
+}
+
+function unavailableMessage(reason: string): string {
+  if (reason === "REVOKED") return "This share link has been revoked";
+  if (reason === "ALREADY_USED")
+    return "This one-time link has already been used";
+  if (reason === "EXPIRED") return "This share link has expired";
+  return "This share link is no longer available";
+}
+
 /** GET /share/:token — status only, does NOT increment view count */
-shareRoutes.get("/:token", async (c) => {
-  const token = c.req.param("token");
-  const note = await prisma.note.findUnique({ where: { shareToken: token } });
-  return c.json(statusFromNote(note));
-});
+shareRoutes.get(
+  "/:token",
+  optionalAuth,
+  async (c) => {
+    const token = c.req.param("token");
+    const note = await prisma.note.findUnique({ where: { shareToken: token } });
+    const viewerEmail = c.get("userEmail");
+
+    let viewerAllowed: boolean | null | undefined;
+    if (note?.accessType === "RESTRICTED") {
+      if (viewerEmail) {
+        viewerAllowed = await isEmailAllowed(note.id, viewerEmail);
+      } else {
+        viewerAllowed = null;
+      }
+    }
+
+    return c.json(baseStatus(note, { viewerAllowed }));
+  }
+);
 
 /**
- * POST /share/:token/open — open a PUBLIC share (or unlock after password already verified client-side path).
- * For PASSWORD notes, use /unlock instead.
+ * POST /share/:token/open — PUBLIC open, or RESTRICTED open (auth required).
+ * PASSWORD notes must use /unlock.
  */
-shareRoutes.post("/:token/open", async (c) => {
+shareRoutes.post("/:token/open", optionalAuth, async (c) => {
   const token = c.req.param("token");
   const note = await prisma.note.findUnique({ where: { shareToken: token } });
 
@@ -125,14 +149,7 @@ shareRoutes.post("/:token/open", async (c) => {
 
   const state = getNoteAccessibility(note);
   if (!state.isAccessible) {
-    throw new HTTPException(410, {
-      message:
-        state.reason === "REVOKED"
-          ? "This share link has been revoked"
-          : state.reason === "ALREADY_USED"
-            ? "This one-time link has already been used"
-            : "This share link has expired",
-    });
+    throw new HTTPException(410, { message: unavailableMessage(state.reason) });
   }
 
   if (note.accessType === "PASSWORD") {
@@ -141,20 +158,31 @@ shareRoutes.post("/:token/open", async (c) => {
     });
   }
 
+  if (note.accessType === "RESTRICTED") {
+    const userId = c.get("userId");
+    const userEmail = c.get("userEmail");
+    if (!userId || !userEmail) {
+      throw new HTTPException(401, {
+        message: "Sign in to open this restricted share link",
+      });
+    }
+    const allowed = await isEmailAllowed(note.id, userEmail);
+    if (!allowed) {
+      // Do not increment view count
+      throw new HTTPException(403, {
+        message: "Your account is not on the allowlist for this note",
+      });
+    }
+  }
+
   const claimed = await claimSuccessfulView(note.id);
   if (!claimed) {
-    // Lost the race (one-time) or became invalid mid-flight
     const refreshed = await prisma.note.findUnique({ where: { id: note.id } });
     const refreshedState = refreshed
       ? getNoteAccessibility(refreshed)
       : { reason: "NOT_FOUND" as const };
     throw new HTTPException(410, {
-      message:
-        refreshedState.reason === "ALREADY_USED"
-          ? "This one-time link has already been used"
-          : refreshedState.reason === "REVOKED"
-            ? "This share link has been revoked"
-            : "This share link is no longer available",
+      message: unavailableMessage(refreshedState.reason),
     });
   }
 
@@ -164,7 +192,6 @@ shareRoutes.post("/:token/open", async (c) => {
 /**
  * POST /share/:token/unlock — password-protected open.
  * Wrong password does NOT increment view count.
- * Rate-limited per token+IP to mitigate brute force.
  */
 shareRoutes.post(
   "/:token/unlock",
@@ -177,13 +204,9 @@ shareRoutes.post(
       c.req.header("x-real-ip") ||
       "unknown";
 
-    // 10 attempts / 15 minutes per token+IP
     const limit = checkRateLimit(`unlock:${token}:${ip}`, 10, 15 * 60_000);
     if (!limit.allowed) {
-      c.header(
-        "Retry-After",
-        String(Math.ceil(limit.retryAfterMs / 1000))
-      );
+      c.header("Retry-After", String(Math.ceil(limit.retryAfterMs / 1000)));
       throw new HTTPException(429, {
         message: "Too many unlock attempts. Please try again later.",
       });
@@ -197,12 +220,7 @@ shareRoutes.post(
     const state = getNoteAccessibility(note);
     if (!state.isAccessible) {
       throw new HTTPException(410, {
-        message:
-          state.reason === "REVOKED"
-            ? "This share link has been revoked"
-            : state.reason === "ALREADY_USED"
-              ? "This one-time link has already been used"
-              : "This share link has expired",
+        message: unavailableMessage(state.reason),
       });
     }
 
@@ -214,7 +232,6 @@ shareRoutes.post(
 
     const ok = await verifySecret(password, note.accessKeyHash);
     if (!ok) {
-      // Wrong password → no view count increase
       throw new HTTPException(401, { message: "Incorrect password" });
     }
 
@@ -228,4 +245,3 @@ shareRoutes.post(
     return c.json(toSharedView(claimed));
   }
 );
-

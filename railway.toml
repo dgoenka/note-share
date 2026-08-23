@@ -4,7 +4,7 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "pnpm --filter @note-share/api start"
+startCommand = "sh -c 'pnpm --filter @note-share/api exec prisma db push && pnpm --filter @note-share/api start'"
 healthcheckPath = "/health"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"

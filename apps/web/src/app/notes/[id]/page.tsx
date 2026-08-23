@@ -171,7 +171,11 @@ function NoteDetailView() {
                   {note.shareType === "ONE_TIME" ? "One-time" : "Time-based"}
                 </Badge>
                 <Badge variant="secondary">
-                  {note.accessType === "PUBLIC" ? "Public" : "Password"}
+                  {note.accessType === "PUBLIC"
+                    ? "Public"
+                    : note.accessType === "PASSWORD"
+                      ? "Password"
+                      : "Allowlist"}
                 </Badge>
                 {note.isRevoked ? (
                   <Badge variant="destructive">Revoked</Badge>
@@ -245,6 +249,29 @@ function NoteDetailView() {
                 <p>Revoked at: {formatDateTime(note.revokedAt)}</p>
               </div>
             </div>
+
+            {note.accessType === "RESTRICTED" &&
+              note.allowedEmails &&
+              note.allowedEmails.length > 0 && (
+                <div className="rounded-2xl border border-violet-100 bg-white/60 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
+                    Allowed emails
+                  </p>
+                  <ul className="mt-2 flex flex-wrap gap-2">
+                    {note.allowedEmails.map((email) => (
+                      <li
+                        key={email}
+                        className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-900"
+                      >
+                        {email}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-xs text-[var(--muted)]">
+                    Recipients must be signed in with one of these addresses.
+                  </p>
+                </div>
+              )}
 
             <div className="flex flex-col gap-2 border-t border-violet-100 pt-4 sm:flex-row sm:flex-wrap">
               <Button

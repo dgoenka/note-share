@@ -77,11 +77,16 @@ export const api = {
   revokeNote: (token: string, id: string) =>
     request<NoteDetail>(`/notes/${id}/revoke`, { method: "POST", token }),
 
-  shareStatus: (shareToken: string) =>
-    request<ShareStatus>(`/share/${shareToken}`),
+  shareStatus: (shareToken: string, authToken?: string | null) =>
+    request<ShareStatus>(`/share/${shareToken}`, {
+      token: authToken ?? undefined,
+    }),
 
-  openShare: (shareToken: string) =>
-    request<SharedNoteView>(`/share/${shareToken}/open`, { method: "POST" }),
+  openShare: (shareToken: string, authToken?: string | null) =>
+    request<SharedNoteView>(`/share/${shareToken}/open`, {
+      method: "POST",
+      token: authToken ?? undefined,
+    }),
 
   unlockShare: (shareToken: string, password: string) =>
     request<SharedNoteView>(`/share/${shareToken}/unlock`, {

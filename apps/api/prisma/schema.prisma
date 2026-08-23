@@ -20,14 +20,14 @@ model User {
 }
 
 model Note {
-  id               String     @id @default(cuid())
+  id               String             @id @default(cuid())
   title            String
   content          String
   shareType        ShareType
   accessType       AccessType
   /// Cryptographically random opaque token used in /share/[token]
-  shareToken       String     @unique
-  /// bcrypt hash of the one-time-shown access key (null for PUBLIC)
+  shareToken       String             @unique
+  /// bcrypt hash of the one-time-shown access key (null for PUBLIC / RESTRICTED)
   accessKeyHash    String?
   expiresAt        DateTime?
   /// Set when owner force-revokes the share link
@@ -35,15 +35,30 @@ model Note {
   /// Set on first successful view for ONE_TIME shares (race-safe claim)
   usedAt           DateTime?
   /// Atomic counter of successful views only
-  viewCount        Int        @default(0)
+  viewCount        Int                @default(0)
   ownerId          String
-  owner            User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  owner            User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  allowedEmails    NoteAllowedEmail[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
   @@index([ownerId])
   @@index([shareToken])
   @@map("notes")
+}
+
+/// Allowlist entry for RESTRICTED notes (email must match a logged-in user)
+model NoteAllowedEmail {
+  id        String   @id @default(cuid())
+  noteId    String
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  /// Always stored lowercase
+  email     String
+  createdAt DateTime @default(now())
+
+  @@unique([noteId, email])
+  @@index([email])
+  @@map("note_allowed_emails")
 }
 
 enum ShareType {
@@ -54,4 +69,5 @@ enum ShareType {
 enum AccessType {
   PUBLIC
   PASSWORD
+  RESTRICTED
 }

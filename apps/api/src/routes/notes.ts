@@ -12,10 +12,12 @@ import {
 } from "../lib/crypto.js";
 import { getNoteAccessibility } from "../lib/note-state.js";
 import { requireAuth, type AuthVariables } from "../middleware/auth.js";
-import type { Note } from "@prisma/client";
+import type { Note, NoteAllowedEmail } from "@prisma/client";
+
+type NoteWithEmails = Note & { allowedEmails?: NoteAllowedEmail[] };
 
 function toNoteDetail(
-  note: Note,
+  note: NoteWithEmails,
   options?: { accessKey?: string | null }
 ): NoteDetail {
   const state = getNoteAccessibility(note);
@@ -28,6 +30,10 @@ function toNoteDetail(
     shareToken: note.shareToken,
     shareUrl: `${env.WEB_ORIGIN}/share/${note.shareToken}`,
     accessKey: options?.accessKey ?? null,
+    allowedEmails:
+      note.accessType === "RESTRICTED"
+        ? (note.allowedEmails ?? []).map((e) => e.email)
+        : undefined,
     expiresAt: note.expiresAt?.toISOString() ?? null,
     revokedAt: note.revokedAt?.toISOString() ?? null,
     usedAt: note.usedAt?.toISOString() ?? null,
@@ -41,6 +47,8 @@ function toNoteDetail(
   };
 }
 
+const noteInclude = { allowedEmails: { orderBy: { email: "asc" as const } } };
+
 export const notesRoutes = new Hono<{ Variables: AuthVariables }>();
 
 notesRoutes.use("*", requireAuth);
@@ -49,6 +57,7 @@ notesRoutes.get("/", async (c) => {
   const userId = c.get("userId");
   const notes = await prisma.note.findMany({
     where: { ownerId: userId },
+    include: noteInclude,
     orderBy: { createdAt: "desc" },
   });
   return c.json({ notes: notes.map((n) => toNoteDetail(n)) });
@@ -75,6 +84,11 @@ notesRoutes.post("/", zValidator("json", createNoteSchema), async (c) => {
         ? new Date(body.expiresAt)
         : null;
 
+  const uniqueEmails =
+    body.accessType === "RESTRICTED"
+      ? [...new Set((body.allowedEmails ?? []).map((e) => e.toLowerCase()))]
+      : [];
+
   const note = await prisma.note.create({
     data: {
       title: body.title,
@@ -85,7 +99,15 @@ notesRoutes.post("/", zValidator("json", createNoteSchema), async (c) => {
       accessKeyHash,
       expiresAt,
       ownerId: userId,
+      ...(uniqueEmails.length > 0
+        ? {
+            allowedEmails: {
+              create: uniqueEmails.map((email) => ({ email })),
+            },
+          }
+        : {}),
     },
+    include: noteInclude,
   });
 
   return c.json(toNoteDetail(note, { accessKey }), 201);
@@ -97,6 +119,7 @@ notesRoutes.get("/:id", async (c) => {
 
   const note = await prisma.note.findFirst({
     where: { id, ownerId: userId },
+    include: noteInclude,
   });
   if (!note) {
     throw new HTTPException(404, { message: "Note not found" });
@@ -116,6 +139,7 @@ notesRoutes.post("/:id/revoke", async (c) => {
 
   const existing = await prisma.note.findFirst({
     where: { id, ownerId: userId },
+    include: noteInclude,
   });
   if (!existing) {
     throw new HTTPException(404, { message: "Note not found" });
@@ -127,6 +151,7 @@ notesRoutes.post("/:id/revoke", async (c) => {
       : await prisma.note.update({
           where: { id: existing.id },
           data: { revokedAt: new Date() },
+          include: noteInclude,
         });
 
   return c.json(toNoteDetail(note));
