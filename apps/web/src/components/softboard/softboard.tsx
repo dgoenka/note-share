@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDownWideNarrow, Plus } from "lucide-react";
+import { ListOrdered, Plus } from "lucide-react";
 import type { BoardPin } from "@note-share/shared";
 import { api, ApiError } from "@/lib/api";
 import { Alert } from "@/components/ui/alert";
@@ -254,13 +254,13 @@ export function Softboard({
           <button
             type="button"
             className="pointer-events-auto inline-flex h-11 items-center gap-2 rounded-full bg-white/95 px-3.5 text-sm font-semibold text-amber-950 shadow-lg ring-1 ring-amber-900/15 transition hover:bg-white active:scale-95 disabled:opacity-40"
-            aria-label="Tidy up — arrange newest first"
-            title="Tidy up — arrange newest first"
+            aria-label="Arrange notes in order"
+            title="Arrange notes in chronological order"
             onClick={tidyUp}
             disabled={!pins.length}
           >
-            <ArrowDownWideNarrow className="h-4 w-4" />
-            Tidy up
+            <ListOrdered className="h-4 w-4" />
+            Arrange
           </button>
         )}
         {tab === "mine" && (
