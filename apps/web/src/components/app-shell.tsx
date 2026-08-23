@@ -21,7 +21,7 @@ function BoardTabs() {
 
   return (
     <div
-      className="inline-flex rounded-xl border border-violet-200/80 bg-white/80 p-0.5 shadow-sm"
+      className="inline-flex rounded-xl border border-amber-950/20 bg-[#faf6ef]/90 p-0.5 shadow-sm"
       role="tablist"
       aria-label="Board"
     >
@@ -39,8 +39,8 @@ function BoardTabs() {
           className={cn(
             "rounded-lg px-2.5 py-1.5 text-xs font-semibold transition sm:px-3 sm:text-sm",
             tab === t.id
-              ? "bg-violet-600 text-white shadow"
-              : "text-violet-800 hover:bg-violet-50"
+              ? "bg-[var(--primary)] text-[#faf6ef] shadow"
+              : "text-amber-950/80 hover:bg-amber-950/5"
           )}
           onClick={() => setTab(t.id)}
         >
@@ -101,19 +101,17 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               tabIndex={loading ? -1 : undefined}
               aria-disabled={loading || undefined}
             >
-              <span className="animate-wiggle flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-md shadow-violet-500/30 sm:h-9 sm:w-9">
+              <span className="animate-wiggle flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)] text-[#faf6ef] shadow-md shadow-stone-900/20 sm:h-9 sm:w-9">
                 <Sparkles className="h-4 w-4" />
               </span>
               <span
                 className={cn(
-                  "font-display truncate text-base sm:text-lg",
-                  isSoftboardChrome ? "text-amber-950" : ""
+                  "font-display truncate text-base font-semibold sm:text-lg",
+                  isSoftboardChrome ? "text-amber-950" : "text-stone-900"
                 )}
               >
                 Note
-                <span className="bg-gradient-to-r from-violet-700 to-fuchsia-500 bg-clip-text text-transparent">
-                  Share
-                </span>
+                <span className="text-[var(--accent)]">Share</span>
               </span>
             </Link>
             {isHomeBoard && <BoardTabs />}
@@ -121,7 +119,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
           <nav className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {loading && (
-              <span className="inline-flex items-center gap-2 rounded-full bg-violet-100/80 px-2.5 py-1.5 text-xs font-semibold text-violet-800">
+              <span className="inline-flex items-center gap-2 rounded-full bg-[var(--primary-soft)] px-2.5 py-1.5 text-xs font-semibold text-[var(--primary)]">
                 <Spinner size="sm" />
               </span>
             )}
@@ -132,7 +130,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     "hidden max-w-[8rem] truncate rounded-full px-3 py-1 text-xs font-semibold md:inline",
                     isSoftboardChrome
                       ? "bg-amber-950/10 text-amber-950"
-                      : "bg-violet-100/80 text-violet-800"
+                      : "bg-[var(--primary-soft)] text-[var(--primary)]"
                   )}
                 >
                   {user.name}
@@ -140,7 +138,11 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={isSoftboardChrome ? "text-amber-950 hover:bg-amber-950/10" : ""}
+                  className={
+                    isSoftboardChrome
+                      ? "text-amber-950 hover:bg-amber-950/10"
+                      : ""
+                  }
                   onClick={() => {
                     logout();
                     router.push("/login");
@@ -156,7 +158,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               <>
                 <Link
                   href="/login"
-                  className="px-2 text-sm font-semibold text-violet-700 hover:text-violet-950"
+                  className="px-2 text-sm font-semibold text-[var(--primary)] hover:text-stone-900"
                 >
                   Login
                 </Link>

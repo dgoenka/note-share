@@ -9,14 +9,14 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-lg shadow-violet-500/25 hover:from-violet-500 hover:to-fuchsia-400 hover:shadow-violet-500/35",
+          "bg-[var(--primary)] text-[#faf6ef] shadow-md shadow-stone-900/15 hover:bg-[#4a3125]",
         secondary:
-          "bg-violet-100 text-violet-900 hover:bg-violet-200/90",
+          "bg-[var(--primary-soft)] text-[var(--primary)] hover:bg-[#ead7c4]",
         outline:
-          "border border-violet-200/80 bg-white/70 text-violet-950 hover:bg-white hover:border-violet-300",
+          "border border-stone-300/90 bg-white/80 text-stone-900 hover:bg-white hover:border-stone-400",
         destructive:
-          "bg-gradient-to-br from-rose-600 to-orange-500 text-white shadow-md shadow-rose-500/20 hover:from-rose-500 hover:to-orange-400",
-        ghost: "text-violet-800 hover:bg-violet-100/70",
+          "bg-[var(--danger)] text-white shadow-md shadow-rose-900/15 hover:bg-[#991b1b]",
+        ghost: "text-stone-800 hover:bg-stone-900/5",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -34,7 +34,6 @@ const buttonVariants = cva(
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
-  /** Shows spinner and forces disabled to prevent double clicks */
   loading?: boolean;
 }
 
@@ -52,8 +51,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           size="sm"
           className={cn(
             variant === "default" || variant === "destructive"
-              ? "text-white"
-              : "text-violet-700"
+              ? "text-[#faf6ef]"
+              : "text-[var(--primary)]"
           )}
         />
       )}

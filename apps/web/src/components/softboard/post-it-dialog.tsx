@@ -142,7 +142,7 @@ export function PostItDialog({
             {detail && (
               <a
                 href={`/notes/${detail.id}`}
-                className="inline-block text-xs font-semibold text-violet-800 underline"
+                className="inline-block text-xs font-semibold text-[var(--accent)] underline"
               >
                 Open full note page
               </a>

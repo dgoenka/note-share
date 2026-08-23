@@ -18,16 +18,14 @@ function Landing() {
         <div className="mesh-orb -right-10 -top-10 h-32 w-32 bg-fuchsia-300/60 sm:h-40 sm:w-40" />
         <div className="mesh-orb bottom-0 left-10 h-24 w-24 bg-cyan-200/50 sm:h-28 sm:w-28" />
         <div className="relative space-y-4 sm:space-y-5">
-          <Badge className="bg-violet-100 text-violet-800">
+          <Badge>
             <Sparkles className="mr-1 h-3 w-3" />
             Expiring share links
           </Badge>
-          <h1 className="font-display text-3xl leading-tight tracking-tight sm:text-5xl">
+          <h1 className="font-display text-3xl leading-tight tracking-tight text-stone-900 sm:text-5xl">
             Notes with controlled
             <br />
-            <span className="bg-gradient-to-r from-violet-700 via-fuchsia-600 to-rose-500 bg-clip-text text-transparent">
-              share access
-            </span>
+            <span className="text-[var(--accent)]">share access</span>
           </h1>
           <p className="max-w-xl text-sm text-[var(--muted)] sm:text-lg">
             Create a note, generate a share link, and choose one-time or
@@ -76,7 +74,7 @@ function Landing() {
             key={item.title}
             className="animate-fade-up p-5 transition hover:-translate-y-1 hover:shadow-lg"
           >
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-md shadow-violet-500/20">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--primary)] text-[#faf6ef] shadow-md shadow-stone-900/15">
               <item.icon className="h-5 w-5" />
             </div>
             <h3 className="font-display text-lg font-semibold">{item.title}</h3>

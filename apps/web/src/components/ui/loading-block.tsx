@@ -22,7 +22,7 @@ export function LoadingBlock({
       )}
     >
       <Spinner size="lg" />
-      <p className="text-sm font-semibold text-violet-800/80">{label}</p>
+      <p className="text-sm font-semibold text-stone-700">{label}</p>
       {children}
     </div>
   );
@@ -61,9 +61,9 @@ export function LoadingOverlay({
           aria-live="polite"
           className="absolute inset-0 z-20 flex items-center justify-center rounded-[inherit] bg-white/55 backdrop-blur-[2px]"
         >
-          <div className="flex items-center gap-2 rounded-2xl border border-violet-200/70 bg-white/95 px-4 py-2.5 shadow-lg shadow-violet-500/10">
+          <div className="flex items-center gap-2 rounded-2xl border border-stone-200 bg-white/95 px-4 py-2.5 shadow-lg shadow-stone-900/10">
             <Spinner size="sm" />
-            <span className="text-sm font-semibold text-violet-900">
+            <span className="text-sm font-semibold text-stone-900">
               {label}
             </span>
           </div>

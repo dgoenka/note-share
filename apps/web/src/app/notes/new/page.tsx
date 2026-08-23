@@ -172,7 +172,7 @@ function NewNoteForm() {
   return (
     <Card className="animate-fade-up overflow-hidden">
       <CardHeader>
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-500">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
           Compose
         </p>
         <CardTitle className="text-2xl sm:text-3xl">Create a note</CardTitle>
@@ -220,14 +220,14 @@ function NewNoteForm() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <fieldset className="space-y-2">
                   <Label>Share type</Label>
-                  <div className="space-y-2 rounded-2xl border border-violet-200/70 bg-white/50 p-3">
-                    <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
+                  <div className="space-y-2 rounded-2xl border border-stone-300/70 bg-white/50 p-3">
+                    <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-stone-100/80">
                       <input
                         type="radio"
                         name="shareType"
                         checked={shareType === "TIME_BASED"}
                         onChange={() => setShareType("TIME_BASED")}
-                        className="mt-1 accent-violet-600"
+                        className="mt-1 accent-[var(--primary)]"
                       />
                       <span>
                         <span className="font-semibold">Time-based</span>
@@ -236,13 +236,13 @@ function NewNoteForm() {
                         </span>
                       </span>
                     </label>
-                    <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
+                    <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-stone-100/80">
                       <input
                         type="radio"
                         name="shareType"
                         checked={shareType === "ONE_TIME"}
                         onChange={() => setShareType("ONE_TIME")}
-                        className="mt-1 accent-violet-600"
+                        className="mt-1 accent-[var(--primary)]"
                       />
                       <span>
                         <span className="font-semibold">One-time</span>
@@ -256,14 +256,14 @@ function NewNoteForm() {
 
                 <fieldset className="space-y-2">
                   <Label>Access type</Label>
-                  <div className="space-y-2 rounded-2xl border border-violet-200/70 bg-white/50 p-3">
-                    <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
+                  <div className="space-y-2 rounded-2xl border border-stone-300/70 bg-white/50 p-3">
+                    <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-stone-100/80">
                       <input
                         type="radio"
                         name="accessType"
                         checked={accessType === "PUBLIC"}
                         onChange={() => setAccessType("PUBLIC")}
-                        className="mt-1 accent-violet-600"
+                        className="mt-1 accent-[var(--primary)]"
                       />
                       <span>
                         <span className="font-semibold">Public</span>
@@ -272,13 +272,13 @@ function NewNoteForm() {
                         </span>
                       </span>
                     </label>
-                    <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
+                    <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-stone-100/80">
                       <input
                         type="radio"
                         name="accessType"
                         checked={accessType === "PASSWORD"}
                         onChange={() => setAccessType("PASSWORD")}
-                        className="mt-1 accent-violet-600"
+                        className="mt-1 accent-[var(--primary)]"
                       />
                       <span>
                         <span className="font-semibold">Password-protected</span>
@@ -287,13 +287,13 @@ function NewNoteForm() {
                         </span>
                       </span>
                     </label>
-                    <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
+                    <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-stone-100/80">
                       <input
                         type="radio"
                         name="accessType"
                         checked={accessType === "RESTRICTED"}
                         onChange={() => setAccessType("RESTRICTED")}
-                        className="mt-1 accent-violet-600"
+                        className="mt-1 accent-[var(--primary)]"
                       />
                       <span>
                         <span className="font-semibold">Email allowlist</span>
@@ -309,16 +309,16 @@ function NewNoteForm() {
               {accessType === "RESTRICTED" && (
                 <div className="space-y-2">
                   <Label htmlFor="allowedEmail">Allowed emails</Label>
-                  <div className="flex min-h-11 flex-wrap items-center gap-2 rounded-xl border border-violet-200/70 bg-white/80 p-2 shadow-sm focus-within:ring-2 focus-within:ring-[var(--ring)]">
+                  <div className="flex min-h-11 flex-wrap items-center gap-2 rounded-xl border border-stone-300/70 bg-white/80 p-2 shadow-sm focus-within:ring-2 focus-within:ring-[var(--ring)]">
                     {allowedEmails.map((email) => (
                       <span
                         key={email}
-                        className="inline-flex max-w-full items-center gap-1 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-900"
+                        className="inline-flex max-w-full items-center gap-1 rounded-full bg-[var(--primary-soft)] px-2.5 py-1 text-xs font-semibold text-stone-900"
                       >
                         <span className="truncate">{email}</span>
                         <button
                           type="button"
-                          className="rounded-full p-0.5 hover:bg-violet-200"
+                          className="rounded-full p-0.5 hover:bg-[#ead7c4]"
                           aria-label={`Remove ${email}`}
                           onClick={() =>
                             setAllowedEmails((prev) =>

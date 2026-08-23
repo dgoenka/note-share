@@ -216,7 +216,7 @@ export function Softboard({
         {tab === "mine" && (
           <button
             type="button"
-            className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-violet-600 text-white shadow-xl shadow-violet-600/30 transition hover:bg-violet-500 active:scale-95"
+            className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--primary)] text-[#faf6ef] shadow-xl shadow-stone-900/25 transition hover:bg-[#4a3125] active:scale-95"
             aria-label="New note"
             title="New note"
             onClick={() => router.push("/notes/new")}

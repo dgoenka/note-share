@@ -75,7 +75,7 @@ function RegisterForm() {
   return (
     <Card className="animate-fade-up mx-auto max-w-md overflow-hidden">
       <CardHeader>
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-500">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
           First time?
         </p>
         <CardTitle className="text-2xl sm:text-3xl">Join NoteShare</CardTitle>
@@ -147,8 +147,8 @@ function RegisterForm() {
                 }
                 className={
                   submitting
-                    ? "pointer-events-none font-bold text-violet-400"
-                    : "font-bold text-violet-700 underline decoration-violet-300 underline-offset-4"
+                    ? "pointer-events-none font-bold text-stone-400"
+                    : "font-bold text-[var(--accent)] underline decoration-orange-200 underline-offset-4"
                 }
                 tabIndex={submitting ? -1 : undefined}
                 aria-disabled={submitting || undefined}

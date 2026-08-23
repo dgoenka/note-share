@@ -155,7 +155,7 @@ function NoteDetailView() {
         className="rounded-3xl"
       >
         <Card className="overflow-hidden">
-          <div className="h-2 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-rose-400" />
+          <div className="h-2 bg-gradient-to-r from-[var(--primary)] to-[var(--accent)]" />
           <CardHeader>
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
@@ -191,17 +191,17 @@ function NoteDetailView() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
+              <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
                 Content
               </h4>
-              <div className="whitespace-pre-wrap rounded-2xl border border-violet-100 bg-gradient-to-br from-white to-violet-50/50 p-5 text-sm leading-relaxed">
+              <div className="whitespace-pre-wrap rounded-2xl border border-stone-200 bg-gradient-to-br from-white to-violet-50/50 p-5 text-sm leading-relaxed">
                 {note.content}
               </div>
             </div>
 
             <div className="grid gap-4 text-sm sm:grid-cols-2">
-              <div className="rounded-2xl border border-violet-100 bg-white/60 p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
+              <div className="rounded-2xl border border-stone-200 bg-white/60 p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
                   Share link
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -209,7 +209,7 @@ function NoteDetailView() {
                     href={busy ? undefined : note.shareUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="break-all font-mono text-xs text-violet-700 underline decoration-violet-300 underline-offset-2"
+                    className="break-all font-mono text-xs text-[var(--primary)] underline decoration-violet-300 underline-offset-2"
                     tabIndex={busy ? -1 : undefined}
                     aria-disabled={busy || undefined}
                     onClick={(e) => {
@@ -234,13 +234,13 @@ function NoteDetailView() {
                   </Button>
                 </div>
               </div>
-              <div className="space-y-1 rounded-2xl border border-violet-100 bg-white/60 p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
+              <div className="space-y-1 rounded-2xl border border-stone-200 bg-white/60 p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
                   Stats
                 </p>
                 <p>
                   Successful views:{" "}
-                  <span className="font-bold text-violet-800">
+                  <span className="font-bold text-[var(--primary)]">
                     {note.viewCount}
                   </span>
                 </p>
@@ -253,15 +253,15 @@ function NoteDetailView() {
             {note.accessType === "RESTRICTED" &&
               note.allowedEmails &&
               note.allowedEmails.length > 0 && (
-                <div className="rounded-2xl border border-violet-100 bg-white/60 p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
+                <div className="rounded-2xl border border-stone-200 bg-white/60 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
                     Allowed emails
                   </p>
                   <ul className="mt-2 flex flex-wrap gap-2">
                     {note.allowedEmails.map((email) => (
                       <li
                         key={email}
-                        className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-900"
+                        className="rounded-full bg-[var(--primary-soft)] px-2.5 py-1 text-xs font-semibold text-stone-900"
                       >
                         {email}
                       </li>
@@ -273,7 +273,7 @@ function NoteDetailView() {
                 </div>
               )}
 
-            <div className="flex flex-col gap-2 border-t border-violet-100 pt-4 sm:flex-row sm:flex-wrap">
+            <div className="flex flex-col gap-2 border-t border-stone-200 pt-4 sm:flex-row sm:flex-wrap">
               <Button
                 variant="destructive"
                 className="w-full sm:w-auto"

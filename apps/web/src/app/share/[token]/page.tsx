@@ -136,9 +136,9 @@ export default function SharePage() {
   if (view) {
     return (
       <Card className="animate-fade-up overflow-hidden">
-        <div className="h-2 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-rose-400" />
+        <div className="h-2 bg-gradient-to-r from-[var(--primary)] to-[var(--accent)]" />
         <CardHeader>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-500">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
             Shared note
           </p>
           <CardTitle className="break-words text-2xl sm:text-3xl">
@@ -160,7 +160,7 @@ export default function SharePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="whitespace-pre-wrap rounded-2xl border border-violet-100 bg-gradient-to-br from-white to-violet-50/60 p-5 text-sm leading-relaxed shadow-inner">
+          <div className="whitespace-pre-wrap rounded-2xl border border-stone-200 bg-gradient-to-br from-white to-violet-50/60 p-5 text-sm leading-relaxed shadow-inner">
             {view.content}
           </div>
           {view.shareType === "ONE_TIME" && (
@@ -202,12 +202,12 @@ export default function SharePage() {
   if (status.requiresPassword) {
     return (
       <Card className="animate-fade-up mx-auto max-w-md overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-violet-100 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-6 py-4">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-md">
+        <div className="flex items-center gap-3 border-b border-stone-200 bg-gradient-to-r from-[var(--primary-soft)] to-[#fde8d8] px-6 py-4">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] text-white shadow-md">
             <KeyRound className="h-5 w-5" />
           </span>
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
               Locked
             </p>
             <p className="font-display text-lg font-semibold">
@@ -260,12 +260,12 @@ export default function SharePage() {
   if (status.requiresAuth) {
     return (
       <Card className="animate-fade-up mx-auto max-w-md overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-violet-100 bg-gradient-to-r from-violet-50 to-cyan-50 px-6 py-4">
+        <div className="flex items-center gap-3 border-b border-stone-200 bg-gradient-to-r from-violet-50 to-cyan-50 px-6 py-4">
           <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-cyan-500 text-white shadow-md">
             <Users className="h-5 w-5" />
           </span>
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
               Restricted
             </p>
             <p className="truncate font-display text-lg font-semibold">
@@ -285,7 +285,7 @@ export default function SharePage() {
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Link
                   href={`/login?next=${encodeURIComponent(`/share/${shareToken}`)}`}
-                  className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-500 px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 sm:w-auto"
+                  className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 sm:w-auto"
                 >
                   Sign in
                 </Link>
