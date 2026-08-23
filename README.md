@@ -7,6 +7,16 @@ Job-application POC: create notes and share them with **expiring** links (one-ti
 **Repo:** https://github.com/dgoenka/note-share  
 **Live:** https://note-share-ruby.vercel.app · API https://api-production-5dd68.up.railway.app  
 
+## Quick demo path
+
+1. Open https://note-share-ruby.vercel.app and register (or sign in).
+2. **New note** → pick share type + access type → create.
+3. On the note page: **copy share link** (and **access key** if password-protected — shown once).
+4. Open the link in a private/incognito window.
+5. Optional: create a one-time note and open it twice (second open should fail); try **revoke**.
+
+Register any user (e.g. `demo@example.com` / `password123`).
+
 ```
 pnpm install && pnpm --filter @note-share/shared build
 pnpm --filter @note-share/api db:push
@@ -14,8 +24,6 @@ pnpm test          # API integration tests (needs local Postgres)
 pnpm dev:api       # :4000
 pnpm dev:web       # :3000
 ```
-
-Register any user (e.g. `demo@example.com` / `password123`).
 
 ---
 
