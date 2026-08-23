@@ -22,6 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
+import { LoadingOverlay } from "@/components/ui/loading-block";
 
 function defaultExpiryLocal(): string {
   const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -71,7 +72,7 @@ function NewNoteForm() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!token) return;
+    if (!token || submitting) return;
     setError(null);
     setFieldErrors({});
 
@@ -95,15 +96,15 @@ function NewNoteForm() {
           ? `?accessKey=${encodeURIComponent(note.accessKey)}`
           : "";
       router.replace(`/notes/${note.id}${q}`);
+      // Keep overlay up until navigation — don't clear submitting on success
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to create note");
-    } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <Card className="animate-fade-up">
+    <Card className="animate-fade-up overflow-hidden">
       <CardHeader>
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-500">
           Compose
@@ -115,142 +116,151 @@ function NewNoteForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="space-y-5">
-          {error && <Alert variant="destructive">{error}</Alert>}
+        <LoadingOverlay active={submitting} label="Minting share link…">
+          <form onSubmit={onSubmit} className="space-y-5" aria-busy={submitting}>
+            {error && <Alert variant="destructive">{error}</Alert>}
 
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Weekend Wi‑Fi password"
-              required
-              maxLength={200}
-            />
-            {fieldErrors.title && (
-              <p className="text-xs text-rose-600">{fieldErrors.title}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="content">Content</Label>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Write the secret sauce…"
-              required
-              rows={8}
-            />
-            {fieldErrors.content && (
-              <p className="text-xs text-rose-600">{fieldErrors.content}</p>
-            )}
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <fieldset className="space-y-2">
-              <Label>Share type</Label>
-              <div className="space-y-2 rounded-2xl border border-violet-200/70 bg-white/50 p-3">
-                <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
-                  <input
-                    type="radio"
-                    name="shareType"
-                    checked={shareType === "TIME_BASED"}
-                    onChange={() => setShareType("TIME_BASED")}
-                    className="mt-1 accent-violet-600"
-                  />
-                  <span>
-                    <span className="font-semibold">Time-based</span>
-                    <span className="block text-xs text-[var(--muted)]">
-                      Expires after the selected date/time
-                    </span>
-                  </span>
-                </label>
-                <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
-                  <input
-                    type="radio"
-                    name="shareType"
-                    checked={shareType === "ONE_TIME"}
-                    onChange={() => setShareType("ONE_TIME")}
-                    className="mt-1 accent-violet-600"
-                  />
-                  <span>
-                    <span className="font-semibold">One-time</span>
-                    <span className="block text-xs text-[var(--muted)]">
-                      Burns after the first successful view
-                    </span>
-                  </span>
-                </label>
+            <fieldset disabled={submitting} className="space-y-5 border-0 p-0">
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Weekend Wi‑Fi password"
+                  required
+                  maxLength={200}
+                />
+                {fieldErrors.title && (
+                  <p className="text-xs text-rose-600">{fieldErrors.title}</p>
+                )}
               </div>
-            </fieldset>
 
-            <fieldset className="space-y-2">
-              <Label>Access type</Label>
-              <div className="space-y-2 rounded-2xl border border-violet-200/70 bg-white/50 p-3">
-                <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
-                  <input
-                    type="radio"
-                    name="accessType"
-                    checked={accessType === "PUBLIC"}
-                    onChange={() => setAccessType("PUBLIC")}
-                    className="mt-1 accent-violet-600"
-                  />
-                  <span>
-                    <span className="font-semibold">Public</span>
-                    <span className="block text-xs text-[var(--muted)]">
-                      Anyone with the link can open it
-                    </span>
-                  </span>
-                </label>
-                <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
-                  <input
-                    type="radio"
-                    name="accessType"
-                    checked={accessType === "PASSWORD"}
-                    onChange={() => setAccessType("PASSWORD")}
-                    className="mt-1 accent-violet-600"
-                  />
-                  <span>
-                    <span className="font-semibold">Password-protected</span>
-                    <span className="block text-xs text-[var(--muted)]">
-                      We generate a one-time access key
-                    </span>
-                  </span>
-                </label>
+              <div className="space-y-2">
+                <Label htmlFor="content">Content</Label>
+                <Textarea
+                  id="content"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Write the secret sauce…"
+                  required
+                  rows={8}
+                />
+                {fieldErrors.content && (
+                  <p className="text-xs text-rose-600">{fieldErrors.content}</p>
+                )}
               </div>
-            </fieldset>
-          </div>
 
-          {shareType === "TIME_BASED" && (
-            <div className="space-y-2">
-              <Label htmlFor="expiresAt">Expiry date/time</Label>
-              <Input
-                id="expiresAt"
-                type="datetime-local"
-                value={expiresLocal}
-                onChange={(e) => setExpiresLocal(e.target.value)}
-                required
-              />
-              {fieldErrors.expiresAt && (
-                <p className="text-xs text-rose-600">{fieldErrors.expiresAt}</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <fieldset className="space-y-2">
+                  <Label>Share type</Label>
+                  <div className="space-y-2 rounded-2xl border border-violet-200/70 bg-white/50 p-3">
+                    <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
+                      <input
+                        type="radio"
+                        name="shareType"
+                        checked={shareType === "TIME_BASED"}
+                        onChange={() => setShareType("TIME_BASED")}
+                        className="mt-1 accent-violet-600"
+                      />
+                      <span>
+                        <span className="font-semibold">Time-based</span>
+                        <span className="block text-xs text-[var(--muted)]">
+                          Expires after the selected date/time
+                        </span>
+                      </span>
+                    </label>
+                    <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
+                      <input
+                        type="radio"
+                        name="shareType"
+                        checked={shareType === "ONE_TIME"}
+                        onChange={() => setShareType("ONE_TIME")}
+                        className="mt-1 accent-violet-600"
+                      />
+                      <span>
+                        <span className="font-semibold">One-time</span>
+                        <span className="block text-xs text-[var(--muted)]">
+                          Burns after the first successful view
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                </fieldset>
+
+                <fieldset className="space-y-2">
+                  <Label>Access type</Label>
+                  <div className="space-y-2 rounded-2xl border border-violet-200/70 bg-white/50 p-3">
+                    <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
+                      <input
+                        type="radio"
+                        name="accessType"
+                        checked={accessType === "PUBLIC"}
+                        onChange={() => setAccessType("PUBLIC")}
+                        className="mt-1 accent-violet-600"
+                      />
+                      <span>
+                        <span className="font-semibold">Public</span>
+                        <span className="block text-xs text-[var(--muted)]">
+                          Anyone with the link can open it
+                        </span>
+                      </span>
+                    </label>
+                    <label className="flex cursor-pointer items-start gap-2 rounded-xl p-2 text-sm transition hover:bg-violet-50/80">
+                      <input
+                        type="radio"
+                        name="accessType"
+                        checked={accessType === "PASSWORD"}
+                        onChange={() => setAccessType("PASSWORD")}
+                        className="mt-1 accent-violet-600"
+                      />
+                      <span>
+                        <span className="font-semibold">Password-protected</span>
+                        <span className="block text-xs text-[var(--muted)]">
+                          We generate a one-time access key
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                </fieldset>
+              </div>
+
+              {shareType === "TIME_BASED" && (
+                <div className="space-y-2">
+                  <Label htmlFor="expiresAt">Expiry date/time</Label>
+                  <Input
+                    id="expiresAt"
+                    type="datetime-local"
+                    value={expiresLocal}
+                    onChange={(e) => setExpiresLocal(e.target.value)}
+                    required
+                  />
+                  {fieldErrors.expiresAt && (
+                    <p className="text-xs text-rose-600">
+                      {fieldErrors.expiresAt}
+                    </p>
+                  )}
+                </div>
               )}
-            </div>
-          )}
 
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "Minting link…" : "Create & generate share link"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push("/")}
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" loading={submitting}>
+                  {submitting
+                    ? "Minting link…"
+                    : "Create & generate share link"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={submitting}
+                  onClick={() => router.push("/")}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </fieldset>
+          </form>
+        </LoadingOverlay>
       </CardContent>
     </Card>
   );

@@ -18,13 +18,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/utils";
+import { LoadingBlock, LoadingOverlay } from "@/components/ui/loading-block";
 
 export default function NoteDetailPage() {
   return (
     <RequireAuth>
-      <Suspense
-        fallback={<p className="text-sm text-violet-600/80">Loading note…</p>}
-      >
+      <Suspense fallback={<LoadingBlock label="Loading note…" />}>
         <NoteDetailView />
       </Suspense>
     </RequireAuth>
@@ -39,31 +38,39 @@ function NoteDetailView() {
   const [note, setNote] = useState<NoteDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const [copied, setCopied] = useState<"link" | "key" | null>(null);
 
   // Access key only available from create redirect (never re-fetched from API)
   const accessKeyFromCreate = searchParams.get("accessKey");
+  const busy = revoking || refreshing;
 
-  const load = useCallback(async () => {
-    if (!token || !params.id) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await api.getNote(token, params.id);
-      setNote(data);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to load note");
-    } finally {
-      setLoading(false);
-    }
-  }, [token, params.id]);
+  const load = useCallback(
+    async (mode: "initial" | "refresh" = "initial") => {
+      if (!token || !params.id) return;
+      if (mode === "initial") setLoading(true);
+      else setRefreshing(true);
+      setError(null);
+      try {
+        const data = await api.getNote(token, params.id);
+        setNote(data);
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : "Failed to load note");
+      } finally {
+        if (mode === "initial") setLoading(false);
+        else setRefreshing(false);
+      }
+    },
+    [token, params.id]
+  );
 
   useEffect(() => {
-    void load();
+    void load("initial");
   }, [load]);
 
   async function copy(text: string, kind: "link" | "key") {
+    if (busy) return;
     try {
       await navigator.clipboard.writeText(text);
       setCopied(kind);
@@ -74,7 +81,7 @@ function NoteDetailView() {
   }
 
   async function revoke() {
-    if (!token || !note) return;
+    if (!token || !note || busy) return;
     if (!confirm("Revoke this share link? It cannot be undone.")) return;
     setRevoking(true);
     setError(null);
@@ -89,7 +96,7 @@ function NoteDetailView() {
   }
 
   if (loading) {
-    return <p className="text-sm text-violet-600/80">Loading note…</p>;
+    return <LoadingBlock label="Loading note…" />;
   }
 
   if (error && !note) {
@@ -100,7 +107,12 @@ function NoteDetailView() {
 
   return (
     <div className="animate-fade-up space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => router.push("/")}>
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={busy}
+        onClick={() => router.push("/")}
+      >
         ← Back to notes
       </Button>
 
@@ -123,6 +135,7 @@ function NoteDetailView() {
               size="sm"
               variant="outline"
               type="button"
+              disabled={busy}
               onClick={() => copy(accessKeyFromCreate, "key")}
             >
               {copied === "key" ? (
@@ -136,108 +149,126 @@ function NoteDetailView() {
         </Alert>
       )}
 
-      <Card className="overflow-hidden">
-        <div className="h-2 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-rose-400" />
-        <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <CardTitle className="text-3xl">{note.title}</CardTitle>
-              <CardDescription>
-                Created {formatDateTime(note.createdAt)}
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              <Badge variant="secondary">
-                {note.shareType === "ONE_TIME" ? "One-time" : "Time-based"}
-              </Badge>
-              <Badge variant="secondary">
-                {note.accessType === "PUBLIC" ? "Public" : "Password"}
-              </Badge>
-              {note.isRevoked ? (
-                <Badge variant="destructive">Revoked</Badge>
-              ) : note.isUsed ? (
-                <Badge variant="warning">Used</Badge>
-              ) : note.isExpired ? (
-                <Badge variant="warning">Expired</Badge>
-              ) : (
-                <Badge variant="success">Live</Badge>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
-            <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
-              Content
-            </h4>
-            <div className="whitespace-pre-wrap rounded-2xl border border-violet-100 bg-gradient-to-br from-white to-violet-50/50 p-5 text-sm leading-relaxed">
-              {note.content}
-            </div>
-          </div>
-
-          <div className="grid gap-4 text-sm sm:grid-cols-2">
-            <div className="rounded-2xl border border-violet-100 bg-white/60 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
-                Share link
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <a
-                  href={note.shareUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="break-all font-mono text-xs text-violet-700 underline decoration-violet-300 underline-offset-2"
-                >
-                  {note.shareUrl}
-                </a>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  type="button"
-                  onClick={() => copy(note.shareUrl, "link")}
-                >
-                  {copied === "link" ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                  Copy
-                </Button>
+      <LoadingOverlay
+        active={busy}
+        label={revoking ? "Revoking link…" : "Refreshing…"}
+        className="rounded-3xl"
+      >
+        <Card className="overflow-hidden">
+          <div className="h-2 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-rose-400" />
+          <CardHeader>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <CardTitle className="text-3xl">{note.title}</CardTitle>
+                <CardDescription>
+                  Created {formatDateTime(note.createdAt)}
+                </CardDescription>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <Badge variant="secondary">
+                  {note.shareType === "ONE_TIME" ? "One-time" : "Time-based"}
+                </Badge>
+                <Badge variant="secondary">
+                  {note.accessType === "PUBLIC" ? "Public" : "Password"}
+                </Badge>
+                {note.isRevoked ? (
+                  <Badge variant="destructive">Revoked</Badge>
+                ) : note.isUsed ? (
+                  <Badge variant="warning">Used</Badge>
+                ) : note.isExpired ? (
+                  <Badge variant="warning">Expired</Badge>
+                ) : (
+                  <Badge variant="success">Live</Badge>
+                )}
               </div>
             </div>
-            <div className="space-y-1 rounded-2xl border border-violet-100 bg-white/60 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
-                Stats
-              </p>
-              <p>
-                Successful views:{" "}
-                <span className="font-bold text-violet-800">
-                  {note.viewCount}
-                </span>
-              </p>
-              <p>Expires: {formatDateTime(note.expiresAt)}</p>
-              <p>Used at: {formatDateTime(note.usedAt)}</p>
-              <p>Revoked at: {formatDateTime(note.revokedAt)}</p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
+                Content
+              </h4>
+              <div className="whitespace-pre-wrap rounded-2xl border border-violet-100 bg-gradient-to-br from-white to-violet-50/50 p-5 text-sm leading-relaxed">
+                {note.content}
+              </div>
             </div>
-          </div>
 
-          <div className="flex flex-wrap gap-2 border-t border-violet-100 pt-4">
-            <Button
-              variant="destructive"
-              onClick={revoke}
-              disabled={revoking || note.isRevoked}
-            >
-              {note.isRevoked
-                ? "Already revoked"
-                : revoking
-                  ? "Revoking…"
-                  : "Force invalidate / revoke"}
-            </Button>
-            <Button variant="outline" onClick={() => void load()}>
-              Refresh status
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="grid gap-4 text-sm sm:grid-cols-2">
+              <div className="rounded-2xl border border-violet-100 bg-white/60 p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
+                  Share link
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <a
+                    href={busy ? undefined : note.shareUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="break-all font-mono text-xs text-violet-700 underline decoration-violet-300 underline-offset-2"
+                    tabIndex={busy ? -1 : undefined}
+                    aria-disabled={busy || undefined}
+                    onClick={(e) => {
+                      if (busy) e.preventDefault();
+                    }}
+                  >
+                    {note.shareUrl}
+                  </a>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => copy(note.shareUrl, "link")}
+                  >
+                    {copied === "link" ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                    Copy
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-1 rounded-2xl border border-violet-100 bg-white/60 p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-500">
+                  Stats
+                </p>
+                <p>
+                  Successful views:{" "}
+                  <span className="font-bold text-violet-800">
+                    {note.viewCount}
+                  </span>
+                </p>
+                <p>Expires: {formatDateTime(note.expiresAt)}</p>
+                <p>Used at: {formatDateTime(note.usedAt)}</p>
+                <p>Revoked at: {formatDateTime(note.revokedAt)}</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 border-t border-violet-100 pt-4">
+              <Button
+                variant="destructive"
+                onClick={revoke}
+                loading={revoking}
+                disabled={note.isRevoked || refreshing}
+              >
+                {note.isRevoked
+                  ? "Already revoked"
+                  : revoking
+                    ? "Revoking…"
+                    : "Force invalidate / revoke"}
+              </Button>
+              <Button
+                variant="outline"
+                loading={refreshing}
+                disabled={revoking}
+                onClick={() => void load("refresh")}
+              >
+                {refreshing ? "Refreshing…" : "Refresh status"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </LoadingOverlay>
     </div>
   );
 }

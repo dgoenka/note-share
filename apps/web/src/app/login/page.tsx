@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
+import { LoadingOverlay } from "@/components/ui/loading-block";
 
 export default function LoginPage() {
   const { setSession } = useAuth();
@@ -29,6 +30,7 @@ export default function LoginPage() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (submitting) return;
     setError(null);
     setFieldErrors({});
 
@@ -50,13 +52,12 @@ export default function LoginPage() {
       router.replace("/");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Login failed");
-    } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <Card className="animate-fade-up mx-auto max-w-md">
+    <Card className="animate-fade-up mx-auto max-w-md overflow-hidden">
       <CardHeader>
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-500">
           Welcome back
@@ -67,51 +68,61 @@ export default function LoginPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="space-y-4">
-          {error && <Alert variant="destructive">{error}</Alert>}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            {fieldErrors.email && (
-              <p className="text-xs text-rose-600">{fieldErrors.email}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            {fieldErrors.password && (
-              <p className="text-xs text-rose-600">{fieldErrors.password}</p>
-            )}
-          </div>
-          <Button type="submit" className="w-full" size="lg" disabled={submitting}>
-            {submitting ? "Signing in…" : "Sign in"}
-          </Button>
-          <p className="text-center text-sm text-[var(--muted)]">
-            New here?{" "}
-            <Link
-              href="/register"
-              className="font-bold text-violet-700 underline decoration-violet-300 underline-offset-4"
-            >
-              Create an account
-            </Link>
-          </p>
-        </form>
+        <LoadingOverlay active={submitting} label="Signing in…">
+          <form onSubmit={onSubmit} className="space-y-4" aria-busy={submitting}>
+            {error && <Alert variant="destructive">{error}</Alert>}
+            <fieldset disabled={submitting} className="space-y-4 border-0 p-0">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                {fieldErrors.email && (
+                  <p className="text-xs text-rose-600">{fieldErrors.email}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                {fieldErrors.password && (
+                  <p className="text-xs text-rose-600">{fieldErrors.password}</p>
+                )}
+              </div>
+              <Button type="submit" className="w-full" size="lg" loading={submitting}>
+                {submitting ? "Signing in…" : "Sign in"}
+              </Button>
+            </fieldset>
+            <p className="text-center text-sm text-[var(--muted)]">
+              New here?{" "}
+              <Link
+                href="/register"
+                className={
+                  submitting
+                    ? "pointer-events-none font-bold text-violet-400"
+                    : "font-bold text-violet-700 underline decoration-violet-300 underline-offset-4"
+                }
+                tabIndex={submitting ? -1 : undefined}
+                aria-disabled={submitting || undefined}
+              >
+                Create an account
+              </Link>
+            </p>
+          </form>
+        </LoadingOverlay>
       </CardContent>
     </Card>
   );

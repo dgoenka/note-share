@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Plus, Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -25,7 +26,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4">
           <Link
             href="/"
-            className="group flex items-center gap-2.5 font-semibold tracking-tight"
+            className={cn(
+              "group flex items-center gap-2.5 font-semibold tracking-tight",
+              loading && "pointer-events-none opacity-70"
+            )}
+            tabIndex={loading ? -1 : undefined}
+            aria-disabled={loading || undefined}
           >
             <span className="animate-wiggle flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-md shadow-violet-500/30">
               <Sparkles className="h-4 w-4" />
@@ -39,6 +45,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
 
           <nav className="flex items-center gap-2">
+            {loading && (
+              <span className="inline-flex items-center gap-2 rounded-full bg-violet-100/80 px-3 py-1.5 text-xs font-semibold text-violet-800">
+                <Spinner size="sm" />
+                Session…
+              </span>
+            )}
             {!loading && user && !isSharePage && (
               <>
                 <Button

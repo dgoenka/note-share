@@ -17,6 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { LoadingBlock, LoadingOverlay } from "@/components/ui/loading-block";
 import { formatDateTime } from "@/lib/utils";
 
 export default function SharePage() {
@@ -80,7 +81,7 @@ export default function SharePage() {
 
   async function onUnlock(e: FormEvent) {
     e.preventDefault();
-    if (!token) return;
+    if (!token || opening) return;
     setError(null);
 
     const parsed = unlockShareSchema.safeParse({ password });
@@ -100,19 +101,12 @@ export default function SharePage() {
       if (err instanceof ApiError && err.status === 410) {
         void loadStatus();
       }
-    } finally {
       setOpening(false);
     }
   }
 
   if (loading) {
-    return (
-      <Card className="animate-fade-up">
-        <CardContent className="py-12 text-center text-sm text-[var(--muted)]">
-          Peeking at this share link…
-        </CardContent>
-      </Card>
-    );
+    return <LoadingBlock label="Peeking at this share link…" />;
   }
 
   if (view) {
@@ -197,40 +191,54 @@ export default function SharePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onUnlock} className="space-y-4">
-            {error && <Alert variant="destructive">{error}</Alert>}
-            <div className="space-y-2">
-              <Label htmlFor="password">Access key / password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="off"
-                placeholder="Paste the key you were given"
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full" size="lg" disabled={opening}>
-              {opening ? "Unlocking…" : "Unlock"}
-            </Button>
-          </form>
+          <LoadingOverlay active={opening} label="Unlocking…">
+            <form
+              onSubmit={onUnlock}
+              className="space-y-4"
+              aria-busy={opening}
+            >
+              {error && <Alert variant="destructive">{error}</Alert>}
+              <fieldset disabled={opening} className="space-y-4 border-0 p-0">
+                <div className="space-y-2">
+                  <Label htmlFor="password">Access key / password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="off"
+                    placeholder="Paste the key you were given"
+                    required
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  size="lg"
+                  loading={opening}
+                >
+                  {opening ? "Unlocking…" : "Unlock"}
+                </Button>
+              </fieldset>
+            </form>
+          </LoadingOverlay>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="animate-fade-up">
-      <CardContent className="space-y-3 py-12 text-center text-sm text-[var(--muted)]">
-        <Sparkles className="mx-auto h-6 w-6 animate-floaty text-violet-500" />
-        {opening ? "Opening note…" : "Preparing…"}
-        {error && (
-          <Alert variant="destructive" className="text-left">
-            {error}
-          </Alert>
-        )}
-      </CardContent>
-    </Card>
+    <LoadingBlock
+      label={opening ? "Opening note…" : "Preparing…"}
+      className={error ? "gap-4" : undefined}
+    >
+      {error ? (
+        <Alert variant="destructive" className="mt-2 max-w-md text-left">
+          {error}
+        </Alert>
+      ) : (
+        <Sparkles className="sr-only" />
+      )}
+    </LoadingBlock>
   );
 }

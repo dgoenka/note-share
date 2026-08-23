@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
+import { LoadingBlock, LoadingOverlay } from "@/components/ui/loading-block";
 import { formatDateTime } from "@/lib/utils";
 
 function statusBadge(note: NoteDetail) {
@@ -64,9 +65,7 @@ export default function HomePage() {
   }, [user, token, loading]);
 
   if (loading) {
-    return (
-      <p className="text-center text-sm text-violet-600/80">Warming up…</p>
-    );
+    return <LoadingBlock label="Warming up…" />;
   }
 
   if (!user) {
@@ -145,7 +144,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <div className="animate-fade-up space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-500">
@@ -158,7 +157,7 @@ export default function HomePage() {
             Signed in as {user.email}
           </p>
         </div>
-        <Button onClick={() => router.push("/notes/new")}>
+        <Button onClick={() => router.push("/notes/new")} disabled={fetching}>
           <Plus className="h-4 w-4" />
           New note
         </Button>
@@ -166,74 +165,79 @@ export default function HomePage() {
 
       {error && <Alert variant="destructive">{error}</Alert>}
 
-      {fetching && (
-        <p className="text-sm text-violet-600/80">Fetching your secrets…</p>
-      )}
-
-      {!fetching && notes.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-            <div className="animate-floaty flex h-14 w-14 items-center justify-center rounded-3xl bg-violet-100 text-violet-700">
-              <Link2 className="h-6 w-6" />
-            </div>
-            <p className="font-display text-xl">Empty desk (for now)</p>
-            <p className="max-w-sm text-sm text-[var(--muted)]">
-              Create a note and you&apos;ll get a share link instantly — public
-              or locked.
-            </p>
-            <Button onClick={() => router.push("/notes/new")}>
-              Write the first one
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      <ul className="space-y-3">
-        {notes.map((note, idx) => (
-          <li
-            key={note.id}
-            className={`animate-fade-up stagger-${Math.min(idx + 1, 4)}`}
-          >
-            <Link href={`/notes/${note.id}`}>
-              <Card className="transition hover:-translate-y-0.5 hover:border-violet-300/70 hover:shadow-lg">
-                <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0 space-y-1.5">
-                    <p className="truncate font-display text-lg font-semibold">
-                      {note.title}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 font-semibold text-violet-700">
-                        {note.shareType === "ONE_TIME" ? (
-                          <Timer className="h-3 w-3" />
-                        ) : (
-                          <Clock3 className="h-3 w-3" />
-                        )}
-                        {note.shareType === "ONE_TIME"
-                          ? "One-time"
-                          : "Time-based"}
-                      </span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-fuchsia-50 px-2 py-0.5 font-semibold text-fuchsia-700">
-                        {note.accessType === "PUBLIC" ? (
-                          <Eye className="h-3 w-3" />
-                        ) : (
-                          <Lock className="h-3 w-3" />
-                        )}
-                        {note.accessType === "PUBLIC" ? "Public" : "Password"}
-                      </span>
-                      <span>
-                        {note.viewCount} view
-                        {note.viewCount === 1 ? "" : "s"}
-                      </span>
-                      <span>· {formatDateTime(note.createdAt)}</span>
-                    </div>
-                  </div>
-                  <div className="shrink-0">{statusBadge(note)}</div>
-                </CardContent>
-              </Card>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <LoadingOverlay active={fetching} label="Fetching your secrets…">
+        {!fetching && notes.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+              <div className="animate-floaty flex h-14 w-14 items-center justify-center rounded-3xl bg-violet-100 text-violet-700">
+                <Link2 className="h-6 w-6" />
+              </div>
+              <p className="font-display text-xl">Empty desk (for now)</p>
+              <p className="max-w-sm text-sm text-[var(--muted)]">
+                Create a note and you&apos;ll get a share link instantly —
+                public or locked.
+              </p>
+              <Button onClick={() => router.push("/notes/new")}>
+                Write the first one
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <ul className="min-h-[8rem] space-y-3">
+            {notes.map((note, idx) => (
+              <li
+                key={note.id}
+                className={`animate-fade-up stagger-${Math.min(idx + 1, 4)}`}
+              >
+                <Link
+                  href={`/notes/${note.id}`}
+                  className={fetching ? "pointer-events-none" : undefined}
+                  tabIndex={fetching ? -1 : undefined}
+                  aria-disabled={fetching || undefined}
+                >
+                  <Card className="transition hover:-translate-y-0.5 hover:border-violet-300/70 hover:shadow-lg">
+                    <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0 space-y-1.5">
+                        <p className="truncate font-display text-lg font-semibold">
+                          {note.title}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 font-semibold text-violet-700">
+                            {note.shareType === "ONE_TIME" ? (
+                              <Timer className="h-3 w-3" />
+                            ) : (
+                              <Clock3 className="h-3 w-3" />
+                            )}
+                            {note.shareType === "ONE_TIME"
+                              ? "One-time"
+                              : "Time-based"}
+                          </span>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-fuchsia-50 px-2 py-0.5 font-semibold text-fuchsia-700">
+                            {note.accessType === "PUBLIC" ? (
+                              <Eye className="h-3 w-3" />
+                            ) : (
+                              <Lock className="h-3 w-3" />
+                            )}
+                            {note.accessType === "PUBLIC"
+                              ? "Public"
+                              : "Password"}
+                          </span>
+                          <span>
+                            {note.viewCount} view
+                            {note.viewCount === 1 ? "" : "s"}
+                          </span>
+                          <span>· {formatDateTime(note.createdAt)}</span>
+                        </div>
+                      </div>
+                      <div className="shrink-0">{statusBadge(note)}</div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </LoadingOverlay>
     </div>
   );
 }
