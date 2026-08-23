@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { env } from "./env.js";
 import { authRoutes } from "./routes/auth.js";
+import { boardRoutes } from "./routes/board.js";
 import { notesRoutes } from "./routes/notes.js";
 import { shareRoutes } from "./routes/share.js";
 
@@ -27,6 +28,7 @@ export function createApp() {
 
   app.route("/auth", authRoutes);
   app.route("/notes", notesRoutes);
+  app.route("/board", boardRoutes);
   app.route("/share", shareRoutes);
 
   app.onError((err, c) => {

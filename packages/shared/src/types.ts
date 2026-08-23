@@ -78,3 +78,28 @@ export interface ApiErrorBody {
   error: string;
   details?: unknown;
 }
+
+/** Title-only pin for the softboard (never includes note content) */
+export interface BoardPin {
+  id: string;
+  title: string;
+  shareToken: string;
+  shareType: ShareType;
+  accessType: AccessType;
+  ownerName: string;
+  isOwner: boolean;
+  viewCount: number;
+  expiresAt: string | null;
+  revokedAt: string | null;
+  usedAt: string | null;
+  isExpired: boolean;
+  isRevoked: boolean;
+  isUsed: boolean;
+  isAccessible: boolean;
+  createdAt: string;
+}
+
+export interface BoardPage {
+  items: BoardPin[];
+  nextCursor: string | null;
+}

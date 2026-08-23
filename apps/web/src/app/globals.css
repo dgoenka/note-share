@@ -137,3 +137,14 @@ canvas {
 .stagger-4 {
   animation-delay: 0.28s;
 }
+
+/* Softboard cork / felt surface */
+.softboard-canvas {
+  background-color: #c4a574;
+  background-image:
+    radial-gradient(rgba(90, 60, 30, 0.18) 1px, transparent 1px),
+    radial-gradient(rgba(255, 240, 210, 0.12) 1px, transparent 1px),
+    linear-gradient(165deg, #d2b48c 0%, #c4a574 45%, #b8956a 100%);
+  background-size: 7px 7px, 11px 11px, 100% 100%;
+  background-position: 0 0, 3px 5px, 0 0;
+}

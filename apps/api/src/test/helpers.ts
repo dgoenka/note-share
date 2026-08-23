@@ -38,12 +38,13 @@ export async function createTestNote(options: {
   usedAt?: Date | null;
   allowedEmails?: string[];
   title?: string;
+  content?: string;
 }) {
   const shareToken = `tok_${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const note = await prisma.note.create({
     data: {
       title: options.title ?? "Test note",
-      content: "secret content",
+      content: options.content ?? "secret content",
       shareType: options.shareType ?? "ONE_TIME",
       accessType: options.accessType ?? "PUBLIC",
       shareToken,

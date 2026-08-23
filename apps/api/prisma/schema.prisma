@@ -44,6 +44,7 @@ model Note {
 
   @@index([ownerId])
   @@index([shareToken])
+  @@index([accessType, createdAt])
   @@map("notes")
 }
 

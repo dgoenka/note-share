@@ -1,75 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Clock3,
-  Eye,
   KeyRound,
-  Link2,
-  Lock,
   Plus,
   Sparkles,
   Timer,
-  Users,
 } from "lucide-react";
-import type { NoteDetail } from "@note-share/shared";
 import { useAuth } from "@/lib/auth-context";
-import { api, ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Alert } from "@/components/ui/alert";
-import { LoadingBlock, LoadingOverlay } from "@/components/ui/loading-block";
-import { formatDateTime } from "@/lib/utils";
+import { LoadingBlock } from "@/components/ui/loading-block";
+import { Softboard } from "@/components/softboard/softboard";
+import { cn } from "@/lib/utils";
 
-function statusBadge(note: NoteDetail) {
-  if (note.isRevoked) return <Badge variant="destructive">Revoked</Badge>;
-  if (note.isUsed) return <Badge variant="warning">Used</Badge>;
-  if (note.isExpired) return <Badge variant="warning">Expired</Badge>;
-  return <Badge variant="success">Live</Badge>;
-}
+type BoardTab = "mine" | "feed";
 
 export default function HomePage() {
   const { user, token, loading } = useAuth();
   const router = useRouter();
-  const [notes, setNotes] = useState<NoteDetail[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [fetching, setFetching] = useState(false);
-
-  useEffect(() => {
-    if (loading) return;
-    if (!user || !token) return;
-
-    let cancelled = false;
-    (async () => {
-      setFetching(true);
-      setError(null);
-      try {
-        const res = await api.listNotes(token);
-        if (!cancelled) setNotes(res.notes);
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            err instanceof ApiError ? err.message : "Failed to load notes"
-          );
-        }
-      } finally {
-        if (!cancelled) setFetching(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user, token, loading]);
+  const [tab, setTab] = useState<BoardTab>("mine");
 
   if (loading) {
     return <LoadingBlock label="Warming up…" />;
   }
 
-  if (!user) {
+  if (!user || !token) {
     return (
       <div className="space-y-8">
         <section className="animate-fade-up relative overflow-hidden rounded-3xl border border-violet-200/60 bg-white/60 p-5 shadow-[var(--shadow)] backdrop-blur-xl sm:rounded-[2rem] sm:p-10">
@@ -122,24 +81,21 @@ export default function HomePage() {
               icon: Timer,
               title: "One-time links",
               body: "Invalid after the first successful open.",
-              delay: "stagger-1",
             },
             {
               icon: Clock3,
               title: "Timed expiry",
               body: "Rejects opens after the configured deadline.",
-              delay: "stagger-2",
             },
             {
               icon: KeyRound,
               title: "Access controls",
               body: "Public, password, or logged-in email allowlist.",
-              delay: "stagger-3",
             },
           ].map((item) => (
             <Card
               key={item.title}
-              className={`animate-fade-up ${item.delay} p-5 transition hover:-translate-y-1 hover:shadow-lg`}
+              className="animate-fade-up p-5 transition hover:-translate-y-1 hover:shadow-lg"
             >
               <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-md shadow-violet-500/20">
                 <item.icon className="h-5 w-5" />
@@ -154,111 +110,64 @@ export default function HomePage() {
   }
 
   return (
-    <div className="animate-fade-up space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+    <div className="animate-fade-up space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-500 sm:text-sm">
-            Notebook
+            Softboard
           </p>
           <h1 className="font-display text-2xl tracking-tight sm:text-4xl">
-            Your notes
+            Pinned notes
           </h1>
           <p className="mt-1 truncate text-sm text-[var(--muted)]">
             Signed in as {user.email}
-          </p>
-          <p className="mt-1 text-xs text-[var(--muted)]">
-            Demo: New note → copy share link → open in a private window.
           </p>
         </div>
         <Button
           className="w-full sm:w-auto"
           onClick={() => router.push("/notes/new")}
-          disabled={fetching}
         >
           <Plus className="h-4 w-4" />
           New note
         </Button>
       </div>
 
-      {error && <Alert variant="destructive">{error}</Alert>}
+      <div
+        className="inline-flex rounded-2xl border border-violet-200/70 bg-white/70 p-1 shadow-sm"
+        role="tablist"
+        aria-label="Board source"
+      >
+        {(
+          [
+            { id: "mine" as const, label: "My notes" },
+            { id: "feed" as const, label: "Everyone’s" },
+          ] as const
+        ).map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            className={cn(
+              "rounded-xl px-4 py-2 text-sm font-semibold transition",
+              tab === t.id
+                ? "bg-violet-600 text-white shadow"
+                : "text-violet-800 hover:bg-violet-50"
+            )}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-      <LoadingOverlay active={fetching} label="Loading notes…">
-        {!fetching && notes.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-              <div className="animate-floaty flex h-14 w-14 items-center justify-center rounded-3xl bg-violet-100 text-violet-700">
-                <Link2 className="h-6 w-6" />
-              </div>
-              <p className="font-display text-xl">No notes yet</p>
-              <p className="max-w-sm text-sm text-[var(--muted)]">
-                Create a note to generate a share link (public, password, or
-                email allowlist).
-              </p>
-              <Button onClick={() => router.push("/notes/new")}>
-                Create note
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <ul className="min-h-[8rem] space-y-3">
-            {notes.map((note, idx) => (
-              <li
-                key={note.id}
-                className={`animate-fade-up stagger-${Math.min(idx + 1, 4)}`}
-              >
-                <Link
-                  href={`/notes/${note.id}`}
-                  className={fetching ? "pointer-events-none" : undefined}
-                  tabIndex={fetching ? -1 : undefined}
-                  aria-disabled={fetching || undefined}
-                >
-                  <Card className="transition hover:-translate-y-0.5 hover:border-violet-300/70 hover:shadow-lg">
-                    <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="min-w-0 space-y-1.5">
-                        <p className="truncate font-display text-lg font-semibold">
-                          {note.title}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 font-semibold text-violet-700">
-                            {note.shareType === "ONE_TIME" ? (
-                              <Timer className="h-3 w-3" />
-                            ) : (
-                              <Clock3 className="h-3 w-3" />
-                            )}
-                            {note.shareType === "ONE_TIME"
-                              ? "One-time"
-                              : "Time-based"}
-                          </span>
-                          <span className="inline-flex items-center gap-1 rounded-full bg-fuchsia-50 px-2 py-0.5 font-semibold text-fuchsia-700">
-                            {note.accessType === "PUBLIC" ? (
-                              <Eye className="h-3 w-3" />
-                            ) : note.accessType === "PASSWORD" ? (
-                              <Lock className="h-3 w-3" />
-                            ) : (
-                              <Users className="h-3 w-3" />
-                            )}
-                            {note.accessType === "PUBLIC"
-                              ? "Public"
-                              : note.accessType === "PASSWORD"
-                                ? "Password"
-                                : "Allowlist"}
-                          </span>
-                          <span>
-                            {note.viewCount} view
-                            {note.viewCount === 1 ? "" : "s"}
-                          </span>
-                          <span>· {formatDateTime(note.createdAt)}</span>
-                        </div>
-                      </div>
-                      <div className="shrink-0">{statusBadge(note)}</div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </LoadingOverlay>
+      <p className="text-xs text-[var(--muted)]">
+        {tab === "mine"
+          ? "Your notes as draggable post-its. Click to open."
+          : "Public notes from others, plus restricted notes allowlisted to your email."}
+      </p>
+
+      <Softboard key={tab} userId={user.id} token={token} tab={tab} />
     </div>
   );
 }

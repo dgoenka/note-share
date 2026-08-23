@@ -1,5 +1,6 @@
 import type {
   AuthResponse,
+  BoardPage,
   CreateNoteInput,
   LoginInput,
   NoteDetail,
@@ -93,4 +94,20 @@ export const api = {
       method: "POST",
       body: { password },
     }),
+
+  boardMine: (token: string, opts?: { cursor?: string | null; limit?: number }) => {
+    const q = new URLSearchParams();
+    if (opts?.cursor) q.set("cursor", opts.cursor);
+    if (opts?.limit) q.set("limit", String(opts.limit));
+    const qs = q.toString();
+    return request<BoardPage>(`/board/mine${qs ? `?${qs}` : ""}`, { token });
+  },
+
+  boardFeed: (token: string, opts?: { cursor?: string | null; limit?: number }) => {
+    const q = new URLSearchParams();
+    if (opts?.cursor) q.set("cursor", opts.cursor);
+    if (opts?.limit) q.set("limit", String(opts.limit));
+    const qs = q.toString();
+    return request<BoardPage>(`/board/feed${qs ? `?${qs}` : ""}`, { token });
+  },
 };

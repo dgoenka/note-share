@@ -20,6 +20,10 @@ export const NAME_MAX = 100;
 /** Max emails on a RESTRICTED note allowlist */
 export const ALLOWED_EMAILS_MAX = 25;
 
+/** Softboard page size defaults */
+export const BOARD_PAGE_DEFAULT = 24;
+export const BOARD_PAGE_MAX = 50;
+
 /** Length of the cryptographically random share token (bytes before base64url) */
 export const SHARE_TOKEN_BYTES = 32;
 
