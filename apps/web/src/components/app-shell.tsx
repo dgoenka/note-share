@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { LogOut, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { UserMenu } from "@/components/user-menu";
 import { cn } from "@/lib/utils";
 
 function BoardTabs() {
@@ -53,7 +54,7 @@ function BoardTabs() {
 }
 
 function AppShellInner({ children }: { children: React.ReactNode }) {
-  const { user, loading, logout } = useAuth();
+  const { user, loading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -82,7 +83,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           "z-30 shrink-0 border-b pt-[env(safe-area-inset-top)] backdrop-blur-xl",
           isSoftboardChrome
             ? "border-amber-900/15 bg-[#c4a574]/95"
-            : "sticky top-0 border-violet-200/50 bg-white/55"
+            : "sticky top-0 border-stone-200/70 bg-[#fffcf5]/85"
         )}
       >
         <div
@@ -124,35 +125,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               </span>
             )}
             {!loading && user && !isSharePage && (
-              <>
-                <span
-                  className={cn(
-                    "hidden max-w-[8rem] truncate rounded-full px-3 py-1 text-xs font-semibold md:inline",
-                    isSoftboardChrome
-                      ? "bg-amber-950/10 text-amber-950"
-                      : "bg-[var(--primary-soft)] text-[var(--primary)]"
-                  )}
-                >
-                  {user.name}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={
-                    isSoftboardChrome
-                      ? "text-amber-950 hover:bg-amber-950/10"
-                      : ""
-                  }
-                  onClick={() => {
-                    logout();
-                    router.push("/login");
-                  }}
-                  aria-label="Logout"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="hidden sm:inline">Logout</span>
-                </Button>
-              </>
+              <UserMenu user={user} softboard={isSoftboardChrome} />
             )}
             {!loading && !user && !isAuthPage && !isSharePage && (
               <>

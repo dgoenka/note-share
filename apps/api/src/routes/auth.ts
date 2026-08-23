@@ -79,5 +79,6 @@ authRoutes.get("/me", requireAuth, async (c) => {
   if (!user) {
     throw new HTTPException(401, { message: "Invalid session" });
   }
-  return c.json({ user: toPublicUser(user) });
+  const noteCount = await prisma.note.count({ where: { ownerId: userId } });
+  return c.json({ user: toPublicUser(user), noteCount });
 });

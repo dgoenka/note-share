@@ -64,7 +64,7 @@ export const api = {
     request<AuthResponse>("/auth/login", { method: "POST", body }),
 
   me: (token: string) =>
-    request<{ user: PublicUser }>("/auth/me", { token }),
+    request<{ user: PublicUser; noteCount: number }>("/auth/me", { token }),
 
   listNotes: (token: string) =>
     request<{ notes: NoteDetail[] }>("/notes", { token }),
