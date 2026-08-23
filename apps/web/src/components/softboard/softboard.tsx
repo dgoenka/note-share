@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LayoutGrid, Plus } from "lucide-react";
+import { ArrowDownWideNarrow, Plus } from "lucide-react";
 import type { BoardPin } from "@note-share/shared";
 import { api, ApiError } from "@/lib/api";
 import { Alert } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
+import { useIsMobileBoard } from "@/lib/use-media-query";
 import {
   defaultPosition,
   layoutChronological,
@@ -15,8 +16,16 @@ import {
   savePositions,
   type PinPosition,
 } from "@/lib/softboard-positions";
-import { PostItPin } from "@/components/softboard/post-it-pin";
+import { PostItListItem, PostItPin } from "@/components/softboard/post-it-pin";
 import { PostItDialog } from "@/components/softboard/post-it-dialog";
+
+function sortChronological(pins: BoardPin[]) {
+  return [...pins].sort(
+    (a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() ||
+      b.id.localeCompare(a.id)
+  );
+}
 
 export function Softboard({
   userId,
@@ -28,6 +37,7 @@ export function Softboard({
   tab: "mine" | "feed";
 }) {
   const router = useRouter();
+  const isMobile = useIsMobileBoard();
   const [pins, setPins] = useState<BoardPin[]>([]);
   const [positions, setPositions] = useState<Record<string, PinPosition>>({});
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -71,12 +81,13 @@ export function Softboard({
   useEffect(() => {
     setPins([]);
     setNextCursor(null);
-    setPositions(loadPositions(userId, tab));
+    if (!isMobile) setPositions(loadPositions(userId, tab));
     void fetchPage(null, false);
-  }, [userId, tab, fetchPage]);
+  }, [userId, tab, fetchPage, isMobile]);
 
+  // Desktop: assign default freeform positions for new pins
   useEffect(() => {
-    if (!pins.length) return;
+    if (isMobile || !pins.length) return;
     setPositions((prev) => {
       const canvasW = canvasRef.current?.clientWidth ?? 900;
       const next = { ...prev };
@@ -94,25 +105,25 @@ export function Softboard({
       }
       return next;
     });
-  }, [pins, userId, tab]);
+  }, [pins, userId, tab, isMobile]);
 
   const onMove = useCallback(
     (id: string, pos: PinPosition) => {
+      if (isMobile) return;
       setPositions((prev) => {
         const next = { ...prev, [id]: pos };
         savePositions(userId, tab, next);
         return next;
       });
     },
-    [userId, tab]
+    [userId, tab, isMobile]
   );
 
-  const rearrange = useCallback(() => {
+  const tidyUp = useCallback(() => {
     const canvasW = canvasRef.current?.clientWidth ?? 900;
     const next = layoutChronological(pins, canvasW);
     setPositions(next);
     savePositions(userId, tab, next);
-    // scroll to top so the chronological grid is visible
     canvasRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [pins, userId, tab]);
 
@@ -144,6 +155,11 @@ export function Softboard({
     return Math.max(480, maxY + 160);
   }, [positions]);
 
+  const mobileList = useMemo(
+    () => (isMobile ? sortChronological(pins) : pins),
+    [isMobile, pins]
+  );
+
   return (
     <div className="relative h-full min-h-0 w-full">
       {error && (
@@ -156,63 +172,97 @@ export function Softboard({
         ref={canvasRef}
         className="softboard-canvas h-full w-full overflow-auto"
       >
-        <div
-          className="relative w-full"
-          style={{ height: canvasHeight, minWidth: "100%" }}
-        >
-          {loading && pins.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm font-semibold text-amber-950/70">
-              <Spinner size="sm" className="text-amber-950" /> Loading…
-            </div>
-          )}
-
-          {pins.map((pin) => {
-            const pos = positions[pin.id];
-            if (!pos) return null;
-            return (
-              <PostItPin
-                key={pin.id}
-                pin={pin}
-                position={pos}
-                onMove={onMove}
-                onOpen={setActive}
-              />
-            );
-          })}
-
-          {!loading && pins.length === 0 && (
-            <p className="absolute left-1/2 top-[40%] w-[min(18rem,90%)] -translate-x-1/2 text-center text-sm font-semibold text-amber-950/70">
-              {tab === "mine"
-                ? "Empty board — tap + to pin a note."
-                : "Nothing from others yet."}
-            </p>
-          )}
-
-          <div
-            ref={sentinelRef}
-            className="absolute bottom-8 left-0 flex h-10 w-full items-center justify-center"
-          >
-            {loadingMore && (
-              <span className="inline-flex items-center gap-2 rounded-full bg-amber-950/10 px-3 py-1 text-xs font-semibold text-amber-950">
-                <Spinner size="sm" className="text-amber-950" /> More…
-              </span>
+        {isMobile ? (
+          <div className="mx-auto flex min-h-full w-full max-w-lg flex-col gap-3 px-3 py-4 pb-28">
+            {loading && pins.length === 0 && (
+              <div className="flex flex-1 items-center justify-center gap-2 py-20 text-sm font-semibold text-amber-950/70">
+                <Spinner size="sm" className="text-amber-950" /> Loading…
+              </div>
             )}
+            {!loading && pins.length === 0 && (
+              <p className="py-20 text-center text-sm font-semibold text-amber-950/70">
+                {tab === "mine"
+                  ? "Empty board — tap + to add a note."
+                  : "Nothing from others yet."}
+              </p>
+            )}
+            {mobileList.map((pin) => (
+              <PostItListItem key={pin.id} pin={pin} onOpen={setActive} />
+            ))}
+            <div
+              ref={sentinelRef}
+              className="flex h-10 items-center justify-center"
+            >
+              {loadingMore && (
+                <span className="inline-flex items-center gap-2 rounded-full bg-amber-950/10 px-3 py-1 text-xs font-semibold text-amber-950">
+                  <Spinner size="sm" className="text-amber-950" /> More…
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div
+            className="relative w-full"
+            style={{ height: canvasHeight, minWidth: "100%" }}
+          >
+            {loading && pins.length === 0 && (
+              <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm font-semibold text-amber-950/70">
+                <Spinner size="sm" className="text-amber-950" /> Loading…
+              </div>
+            )}
+
+            {pins.map((pin) => {
+              const pos = positions[pin.id];
+              if (!pos) return null;
+              return (
+                <PostItPin
+                  key={pin.id}
+                  pin={pin}
+                  position={pos}
+                  draggable
+                  onMove={onMove}
+                  onOpen={setActive}
+                />
+              );
+            })}
+
+            {!loading && pins.length === 0 && (
+              <p className="absolute left-1/2 top-[40%] w-[min(18rem,90%)] -translate-x-1/2 text-center text-sm font-semibold text-amber-950/70">
+                {tab === "mine"
+                  ? "Empty board — tap + to pin a note."
+                  : "Nothing from others yet."}
+              </p>
+            )}
+
+            <div
+              ref={sentinelRef}
+              className="absolute bottom-8 left-0 flex h-10 w-full items-center justify-center"
+            >
+              {loadingMore && (
+                <span className="inline-flex items-center gap-2 rounded-full bg-amber-950/10 px-3 py-1 text-xs font-semibold text-amber-950">
+                  <Spinner size="sm" className="text-amber-950" /> More…
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* FABs */}
       <div className="pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 z-30 flex flex-col items-end gap-2 sm:right-5">
-        <button
-          type="button"
-          className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-white/95 text-amber-950 shadow-lg ring-1 ring-amber-900/15 transition hover:bg-white active:scale-95"
-          aria-label="Rearrange chronologically"
-          title="Rearrange chronologically"
-          onClick={rearrange}
-          disabled={!pins.length}
-        >
-          <LayoutGrid className="h-5 w-5" />
-        </button>
+        {!isMobile && (
+          <button
+            type="button"
+            className="pointer-events-auto inline-flex h-11 items-center gap-2 rounded-full bg-white/95 px-3.5 text-sm font-semibold text-amber-950 shadow-lg ring-1 ring-amber-900/15 transition hover:bg-white active:scale-95 disabled:opacity-40"
+            aria-label="Tidy up — arrange newest first"
+            title="Tidy up — arrange newest first"
+            onClick={tidyUp}
+            disabled={!pins.length}
+          >
+            <ArrowDownWideNarrow className="h-4 w-4" />
+            Tidy up
+          </button>
+        )}
         {tab === "mine" && (
           <button
             type="button"
