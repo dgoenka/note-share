@@ -15,3 +15,6 @@ apps/api/prisma/*.db-journal
 .env*
 .idea
 demo-output
+.vercel
+.vercel.assignment.bak
+.railway.assignment.bak
