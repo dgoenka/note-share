@@ -1,10 +1,10 @@
 # Prefer Docker for monorepo reliability on Railway.
+# Start command comes from Dockerfile CMD (includes prisma db push).
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "sh -c 'pnpm --filter @note-share/api exec prisma db push && pnpm --filter @note-share/api start'"
 healthcheckPath = "/health"
-healthcheckTimeout = 60
+healthcheckTimeout = 90
 restartPolicyType = "ON_FAILURE"
