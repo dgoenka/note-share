@@ -1,14 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { LayoutGrid, Plus } from "lucide-react";
 import type { BoardPin } from "@note-share/shared";
 import { api, ApiError } from "@/lib/api";
-import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import { LoadingBlock } from "@/components/ui/loading-block";
 import { Spinner } from "@/components/ui/spinner";
 import {
   defaultPosition,
+  layoutChronological,
   loadPositions,
   prunePositions,
   savePositions,
@@ -26,6 +27,7 @@ export function Softboard({
   token: string;
   tab: "mine" | "feed";
 }) {
+  const router = useRouter();
   const [pins, setPins] = useState<BoardPin[]>([]);
   const [positions, setPositions] = useState<Record<string, PinPosition>>({});
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -48,7 +50,6 @@ export function Softboard({
             : await api.boardFeed(token, { cursor, limit: 24 });
         setPins((prev) => {
           const merged = append ? [...prev, ...page.items] : page.items;
-          // de-dupe by id
           const seen = new Set<string>();
           return merged.filter((p) => {
             if (seen.has(p.id)) return false;
@@ -74,7 +75,6 @@ export function Softboard({
     void fetchPage(null, false);
   }, [userId, tab, fetchPage]);
 
-  // Assign default positions for new pins + persist
   useEffect(() => {
     if (!pins.length) return;
     setPositions((prev) => {
@@ -107,16 +107,30 @@ export function Softboard({
     [userId, tab]
   );
 
+  const rearrange = useCallback(() => {
+    const canvasW = canvasRef.current?.clientWidth ?? 900;
+    const next = layoutChronological(pins, canvasW);
+    setPositions(next);
+    savePositions(userId, tab, next);
+    // scroll to top so the chronological grid is visible
+    canvasRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [pins, userId, tab]);
+
   useEffect(() => {
     const node = sentinelRef.current;
     if (!node) return;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting) && nextCursor && !loadingMore && !loading) {
+        if (
+          entries.some((e) => e.isIntersecting) &&
+          nextCursor &&
+          !loadingMore &&
+          !loading
+        ) {
           void fetchPage(nextCursor, true);
         }
       },
-      { root: canvasRef.current, rootMargin: "120px" }
+      { root: canvasRef.current, rootMargin: "160px" }
     );
     io.observe(node);
     return () => io.disconnect();
@@ -125,25 +139,33 @@ export function Softboard({
   const canvasHeight = useMemo(() => {
     const maxY = Object.values(positions).reduce(
       (m, p) => Math.max(m, p.y + 180),
-      640
+      480
     );
-    return Math.max(640, maxY + 120);
+    return Math.max(480, maxY + 160);
   }, [positions]);
 
-  if (loading && pins.length === 0) {
-    return <LoadingBlock label="Laying out the softboard…" />;
-  }
-
   return (
-    <div className="space-y-3">
-      {error && <Alert variant="destructive">{error}</Alert>}
+    <div className="relative h-full min-h-0 w-full">
+      {error && (
+        <div className="absolute left-3 right-3 top-3 z-20">
+          <Alert variant="destructive">{error}</Alert>
+        </div>
+      )}
 
       <div
         ref={canvasRef}
-        className="softboard-canvas relative w-full overflow-auto rounded-3xl border border-amber-900/20 shadow-inner"
-        style={{ height: "min(70vh, 720px)" }}
+        className="softboard-canvas h-full w-full overflow-auto"
       >
-        <div className="relative w-full" style={{ height: canvasHeight, minWidth: "100%" }}>
+        <div
+          className="relative w-full"
+          style={{ height: canvasHeight, minWidth: "100%" }}
+        >
+          {loading && pins.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm font-semibold text-amber-950/70">
+              <Spinner size="sm" className="text-amber-950" /> Loading…
+            </div>
+          )}
+
           {pins.map((pin) => {
             const pos = positions[pin.id];
             if (!pos) return null;
@@ -159,36 +181,48 @@ export function Softboard({
           })}
 
           {!loading && pins.length === 0 && (
-            <p className="absolute left-1/2 top-1/3 w-[min(20rem,90%)] -translate-x-1/2 text-center text-sm font-semibold text-amber-950/70">
+            <p className="absolute left-1/2 top-[40%] w-[min(18rem,90%)] -translate-x-1/2 text-center text-sm font-semibold text-amber-950/70">
               {tab === "mine"
-                ? "No notes yet — create one and it’ll pin here."
-                : "No public or allowlisted notes from others yet."}
+                ? "Empty board — tap + to pin a note."
+                : "Nothing from others yet."}
             </p>
           )}
 
-          <div ref={sentinelRef} className="absolute bottom-4 left-0 h-4 w-full" />
+          <div
+            ref={sentinelRef}
+            className="absolute bottom-8 left-0 flex h-10 w-full items-center justify-center"
+          >
+            {loadingMore && (
+              <span className="inline-flex items-center gap-2 rounded-full bg-amber-950/10 px-3 py-1 text-xs font-semibold text-amber-950">
+                <Spinner size="sm" className="text-amber-950" /> More…
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-[var(--muted)]">
-          Drag pins to rearrange (saved in this browser). Click a pin to open.
-        </p>
-        {nextCursor && (
-          <Button
-            size="sm"
-            variant="outline"
-            loading={loadingMore}
-            onClick={() => void fetchPage(nextCursor, true)}
+      {/* FABs */}
+      <div className="pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 z-30 flex flex-col items-end gap-2 sm:right-5">
+        <button
+          type="button"
+          className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-white/95 text-amber-950 shadow-lg ring-1 ring-amber-900/15 transition hover:bg-white active:scale-95"
+          aria-label="Rearrange chronologically"
+          title="Rearrange chronologically"
+          onClick={rearrange}
+          disabled={!pins.length}
+        >
+          <LayoutGrid className="h-5 w-5" />
+        </button>
+        {tab === "mine" && (
+          <button
+            type="button"
+            className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-violet-600 text-white shadow-xl shadow-violet-600/30 transition hover:bg-violet-500 active:scale-95"
+            aria-label="New note"
+            title="New note"
+            onClick={() => router.push("/notes/new")}
           >
-            {loadingMore ? (
-              <>
-                <Spinner size="sm" /> Loading…
-              </>
-            ) : (
-              "Load more"
-            )}
-          </Button>
+            <Plus className="h-7 w-7" />
+          </button>
         )}
       </div>
 

@@ -1,3 +1,5 @@
+import type { BoardPin } from "@note-share/shared";
+
 export type PinPosition = {
   x: number;
   y: number;
@@ -5,6 +7,12 @@ export type PinPosition = {
 };
 
 type PositionMap = Record<string, PinPosition>;
+
+const PIN_W = 160;
+const PIN_H = 140;
+const GAP_X = 20;
+const GAP_Y = 24;
+const PAD = 20;
 
 function key(userId: string, tab: "mine" | "feed") {
   return `noteshare.softboard.v1:${userId}:${tab}`;
@@ -34,16 +42,58 @@ export function savePositions(
   localStorage.setItem(key(userId, tab), JSON.stringify(map));
 }
 
+/** Columns by viewport width: phone list-ish (1–2), tablet 3, desktop 4–5 */
+export function columnsForWidth(canvasW: number): number {
+  if (canvasW < 480) return 1;
+  if (canvasW < 720) return 2;
+  if (canvasW < 1024) return 3;
+  if (canvasW < 1280) return 4;
+  return 5;
+}
+
 export function defaultPosition(index: number, canvasW: number): PinPosition {
-  const col = index % 4;
-  const row = Math.floor(index / 4);
-  const x = 24 + col * Math.min(220, canvasW / 4) + (index % 3) * 8;
-  const y = 24 + row * 160 + (index % 2) * 12;
-  const rot = ((index * 17) % 13) - 6;
+  const cols = columnsForWidth(canvasW);
+  const colW = Math.max(PIN_W + GAP_X, (canvasW - PAD * 2) / cols);
+  const col = index % cols;
+  const row = Math.floor(index / cols);
+  const x = PAD + col * colW + (index % 3) * 4;
+  const y = PAD + row * (PIN_H + GAP_Y) + (index % 2) * 6;
+  const rot = ((index * 17) % 11) - 5;
   return { x, y, rot };
 }
 
-export function prunePositions(map: PositionMap, liveIds: Set<string>): PositionMap {
+/** Chronological grid/list: newest first, responsive columns, slight tilt */
+export function layoutChronological(
+  pins: BoardPin[],
+  canvasW: number
+): PositionMap {
+  const sorted = [...pins].sort(
+    (a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() ||
+      b.id.localeCompare(a.id)
+  );
+  const cols = columnsForWidth(canvasW);
+  const usable = Math.max(canvasW - PAD * 2, PIN_W);
+  const colW = cols === 1 ? usable : usable / cols;
+  const map: PositionMap = {};
+  sorted.forEach((pin, index) => {
+    const col = index % cols;
+    const row = Math.floor(index / cols);
+    const x =
+      cols === 1
+        ? PAD + Math.max(0, (usable - PIN_W) / 2)
+        : PAD + col * colW + Math.max(0, (colW - PIN_W) / 2);
+    const y = PAD + row * (PIN_H + GAP_Y);
+    const rot = cols === 1 ? 0 : ((index % 5) - 2) * 1.5;
+    map[pin.id] = { x, y, rot };
+  });
+  return map;
+}
+
+export function prunePositions(
+  map: PositionMap,
+  liveIds: Set<string>
+): PositionMap {
   const next: PositionMap = {};
   for (const [id, pos] of Object.entries(map)) {
     if (liveIds.has(id)) next[id] = pos;
