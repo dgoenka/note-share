@@ -5,21 +5,18 @@ Job-application POC: create notes and share them with **expiring** links (one-ti
 **Stack:** Next.js 15 · Hono · PostgreSQL/Prisma · Zod (shared) · JWT + bcrypt  
 
 **Repo:** https://github.com/dgoenka/note-share  
-**Assignment live (`main`):** https://note-share-ruby.vercel.app · API https://api-production-5dd68.up.railway.app  
+**Live (`main`):** https://note-share-ruby.vercel.app · API https://api-production-26060.up.railway.app  
+**Alias:** https://note-share-softboard.vercel.app (same softboard product)
 
-## Softboard playground (`softboard` branch)
-
-Isolated fun layer on the same share/security model — **does not replace** the assignment demo on `main`.
+## Softboard (default on `main`)
 
 | | |
 |--|--|
 | **What** | Corkboard home: title-only post-its, **Mine** / **Everyone’s** tabs, desktop drag + Arrange, mobile chronological list, `/profile` overflow menu |
-| **Why** | Show adaptive UX + cursor pagination without risking the Peacock submission deploy |
+| **Why** | Adaptive UX + cursor pagination on top of the same share/security model |
 | **How** | Pins never include `content`. Open loads `GET /notes/:id` (owner) or share open/unlock. Layout lives in browser `localStorage` keyed per user + tab (`apps/web/src/lib/softboard-positions.ts`) — not Postgres. Board lists use keyset cursors on `GET /board/mine` and `GET /board/feed`. |
 
-- Softboard web: https://note-share-softboard.vercel.app  
-- Softboard API: https://api-production-26060.up.railway.app  
-- Assignment demo on `main` stays: https://note-share-ruby.vercel.app  
+Share-link create → open → claim flows are unchanged; softboard is the logged-in home experience.
 
 ## Quick demo path
 
