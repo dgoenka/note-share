@@ -117,7 +117,9 @@ export default function SharePage() {
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-500">
             Shared note
           </p>
-          <CardTitle className="text-3xl">{view.title}</CardTitle>
+          <CardTitle className="break-words text-2xl sm:text-3xl">
+            {view.title}
+          </CardTitle>
           <CardDescription>
             {view.shareType === "ONE_TIME" ? "One-time" : "Time-based"}
             {" · "}
@@ -155,7 +157,7 @@ export default function SharePage() {
     return (
       <Card className="animate-fade-up">
         <CardHeader>
-          <CardTitle className="text-3xl">Link unavailable</CardTitle>
+          <CardTitle className="text-2xl sm:text-3xl">Link unavailable</CardTitle>
           <CardDescription>
             {messages[reason] || "This share link cannot be opened."}
           </CardDescription>

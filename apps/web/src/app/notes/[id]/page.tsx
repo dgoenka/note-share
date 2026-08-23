@@ -128,7 +128,7 @@ function NoteDetailView() {
             intended recipient.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <code className="rounded-xl bg-white/80 px-3 py-1.5 font-mono text-sm shadow-sm">
+            <code className="max-w-full break-all rounded-xl bg-white/80 px-3 py-1.5 font-mono text-xs shadow-sm sm:text-sm">
               {accessKeyFromCreate}
             </code>
             <Button
@@ -159,7 +159,9 @@ function NoteDetailView() {
           <CardHeader>
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <CardTitle className="text-3xl">{note.title}</CardTitle>
+                <CardTitle className="break-words text-2xl sm:text-3xl">
+                  {note.title}
+                </CardTitle>
                 <CardDescription>
                   Created {formatDateTime(note.createdAt)}
                 </CardDescription>
@@ -244,9 +246,10 @@ function NoteDetailView() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 border-t border-violet-100 pt-4">
+            <div className="flex flex-col gap-2 border-t border-violet-100 pt-4 sm:flex-row sm:flex-wrap">
               <Button
                 variant="destructive"
+                className="w-full sm:w-auto"
                 onClick={revoke}
                 loading={revoking}
                 disabled={note.isRevoked || refreshing}
@@ -259,6 +262,7 @@ function NoteDetailView() {
               </Button>
               <Button
                 variant="outline"
+                className="w-full sm:w-auto"
                 loading={refreshing}
                 disabled={revoking}
                 onClick={() => void load("refresh")}

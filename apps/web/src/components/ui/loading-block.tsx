@@ -17,7 +17,7 @@ export function LoadingBlock({
       aria-live="polite"
       aria-busy="true"
       className={cn(
-        "glass-card flex min-h-[12rem] flex-col items-center justify-center gap-3 rounded-3xl p-10 text-center",
+        "glass-card flex min-h-[12rem] flex-col items-center justify-center gap-3 rounded-3xl p-6 text-center sm:p-10",
         className
       )}
     >

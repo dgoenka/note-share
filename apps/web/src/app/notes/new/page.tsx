@@ -109,7 +109,7 @@ function NewNoteForm() {
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-500">
           Compose
         </p>
-        <CardTitle className="text-3xl">Create a note</CardTitle>
+        <CardTitle className="text-2xl sm:text-3xl">Create a note</CardTitle>
         <CardDescription>
           We mint a secure share link on create. Password notes get a
           one-time access key — grab it before it disappears.
@@ -243,8 +243,12 @@ function NewNoteForm() {
                 </div>
               )}
 
-              <div className="flex flex-wrap gap-2">
-                <Button type="submit" loading={submitting}>
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <Button
+                  type="submit"
+                  className="w-full sm:w-auto"
+                  loading={submitting}
+                >
                   {submitting
                     ? "Minting link…"
                     : "Create & generate share link"}
@@ -252,6 +256,7 @@ function NewNoteForm() {
                 <Button
                   type="button"
                   variant="outline"
+                  className="w-full sm:w-auto"
                   disabled={submitting}
                   onClick={() => router.push("/")}
                 >

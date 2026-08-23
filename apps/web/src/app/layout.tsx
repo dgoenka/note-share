@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Nunito, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
 import { AppShell } from "@/components/app-shell";
@@ -24,6 +24,13 @@ export const metadata: Metadata = {
   title: "NoteShare — secrets with an expiry date",
   description:
     "Create notes and share them with secure, expiring one-time or time-based links.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#f6f0ff",
 };
 
 export default function RootLayout({

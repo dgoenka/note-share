@@ -71,33 +71,38 @@ export default function HomePage() {
   if (!user) {
     return (
       <div className="space-y-8">
-        <section className="animate-fade-up relative overflow-hidden rounded-[2rem] border border-violet-200/60 bg-white/60 p-8 shadow-[var(--shadow)] backdrop-blur-xl sm:p-10">
-          <div className="mesh-orb -right-10 -top-10 h-40 w-40 bg-fuchsia-300/60" />
-          <div className="mesh-orb bottom-0 left-10 h-28 w-28 bg-cyan-200/50" />
-          <div className="relative space-y-5">
+        <section className="animate-fade-up relative overflow-hidden rounded-3xl border border-violet-200/60 bg-white/60 p-5 shadow-[var(--shadow)] backdrop-blur-xl sm:rounded-[2rem] sm:p-10">
+          <div className="mesh-orb -right-10 -top-10 h-32 w-32 bg-fuchsia-300/60 sm:h-40 sm:w-40" />
+          <div className="mesh-orb bottom-0 left-10 h-24 w-24 bg-cyan-200/50 sm:h-28 sm:w-28" />
+          <div className="relative space-y-4 sm:space-y-5">
             <Badge className="bg-violet-100 text-violet-800">
               <Sparkles className="mr-1 h-3 w-3" />
               secrets with an expiry date
             </Badge>
-            <h1 className="font-display text-4xl leading-tight tracking-tight sm:text-5xl">
+            <h1 className="font-display text-3xl leading-tight tracking-tight sm:text-5xl">
               Share a note.
               <br />
               <span className="bg-gradient-to-r from-violet-700 via-fuchsia-600 to-rose-500 bg-clip-text text-transparent">
                 Then let it vanish.
               </span>
             </h1>
-            <p className="max-w-xl text-base text-[var(--muted)] sm:text-lg">
+            <p className="max-w-xl text-sm text-[var(--muted)] sm:text-lg">
               Write something important, generate a secure link, and choose
               one-time or timed access — with an optional access key for extra
               spice.
             </p>
-            <div className="flex flex-wrap gap-3">
-              <Button size="lg" onClick={() => router.push("/register")}>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+              <Button
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={() => router.push("/register")}
+              >
                 Start sharing
               </Button>
               <Button
                 size="lg"
                 variant="outline"
+                className="w-full sm:w-auto"
                 onClick={() => router.push("/login")}
               >
                 I have an account
@@ -106,7 +111,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {[
             {
               icon: Timer,
@@ -145,19 +150,23 @@ export default function HomePage() {
 
   return (
     <div className="animate-fade-up space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-500">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-500 sm:text-sm">
             Notebook
           </p>
-          <h1 className="font-display text-3xl tracking-tight sm:text-4xl">
+          <h1 className="font-display text-2xl tracking-tight sm:text-4xl">
             Your notes
           </h1>
-          <p className="mt-1 text-sm text-[var(--muted)]">
+          <p className="mt-1 truncate text-sm text-[var(--muted)]">
             Signed in as {user.email}
           </p>
         </div>
-        <Button onClick={() => router.push("/notes/new")} disabled={fetching}>
+        <Button
+          className="w-full sm:w-auto"
+          onClick={() => router.push("/notes/new")}
+          disabled={fetching}
+        >
           <Plus className="h-4 w-4" />
           New note
         </Button>

@@ -62,7 +62,7 @@ export default function LoginPage() {
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-500">
           Welcome back
         </p>
-        <CardTitle className="text-3xl">Log in</CardTitle>
+        <CardTitle className="text-2xl sm:text-3xl">Log in</CardTitle>
         <CardDescription>
           Hop back in and keep those share links under control.
         </CardDescription>

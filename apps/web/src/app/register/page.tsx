@@ -63,7 +63,7 @@ export default function RegisterPage() {
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-500">
           First time?
         </p>
-        <CardTitle className="text-3xl">Join NoteShare</CardTitle>
+        <CardTitle className="text-2xl sm:text-3xl">Join NoteShare</CardTitle>
         <CardDescription>
           Two minutes to set up. Forever (or until expiry) to share.
         </CardDescription>
