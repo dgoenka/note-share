@@ -78,19 +78,19 @@ export default function HomePage() {
           <div className="relative space-y-4 sm:space-y-5">
             <Badge className="bg-violet-100 text-violet-800">
               <Sparkles className="mr-1 h-3 w-3" />
-              secrets with an expiry date
+              Expiring share links
             </Badge>
             <h1 className="font-display text-3xl leading-tight tracking-tight sm:text-5xl">
-              Share a note.
+              Notes with controlled
               <br />
               <span className="bg-gradient-to-r from-violet-700 via-fuchsia-600 to-rose-500 bg-clip-text text-transparent">
-                Then let it vanish.
+                share access
               </span>
             </h1>
             <p className="max-w-xl text-sm text-[var(--muted)] sm:text-lg">
-              Write something important, generate a secure link, and choose
-              one-time or timed access — with an optional access key for extra
-              spice.
+              Create a note, generate a share link, and choose one-time or
+              time-based expiry. Optionally require a password or an email
+              allowlist.
             </p>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
               <Button
@@ -98,7 +98,7 @@ export default function HomePage() {
                 className="w-full sm:w-auto"
                 onClick={() => router.push("/register")}
               >
-                Start sharing
+                Create account
               </Button>
               <Button
                 size="lg"
@@ -106,9 +106,13 @@ export default function HomePage() {
                 className="w-full sm:w-auto"
                 onClick={() => router.push("/login")}
               >
-                I have an account
+                Sign in
               </Button>
             </div>
+            <p className="text-xs text-[var(--muted)]">
+              Demo path: register → New note → copy share link → open in a
+              private window.
+            </p>
           </div>
         </section>
 
@@ -117,19 +121,19 @@ export default function HomePage() {
             {
               icon: Timer,
               title: "One-time links",
-              body: "Burns after the first successful open.",
+              body: "Invalid after the first successful open.",
               delay: "stagger-1",
             },
             {
               icon: Clock3,
               title: "Timed expiry",
-              body: "Pick a deadline — the link retires itself.",
+              body: "Rejects opens after the configured deadline.",
               delay: "stagger-2",
             },
             {
               icon: KeyRound,
-              title: "Access keys",
-              body: "Server-made keys, shown once, bcrypt-hashed.",
+              title: "Access controls",
+              body: "Public, password, or logged-in email allowlist.",
               delay: "stagger-3",
             },
           ].map((item) => (
@@ -162,6 +166,9 @@ export default function HomePage() {
           <p className="mt-1 truncate text-sm text-[var(--muted)]">
             Signed in as {user.email}
           </p>
+          <p className="mt-1 text-xs text-[var(--muted)]">
+            Demo: New note → copy share link → open in a private window.
+          </p>
         </div>
         <Button
           className="w-full sm:w-auto"
@@ -175,20 +182,20 @@ export default function HomePage() {
 
       {error && <Alert variant="destructive">{error}</Alert>}
 
-      <LoadingOverlay active={fetching} label="Fetching your secrets…">
+      <LoadingOverlay active={fetching} label="Loading notes…">
         {!fetching && notes.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
               <div className="animate-floaty flex h-14 w-14 items-center justify-center rounded-3xl bg-violet-100 text-violet-700">
                 <Link2 className="h-6 w-6" />
               </div>
-              <p className="font-display text-xl">Empty desk (for now)</p>
+              <p className="font-display text-xl">No notes yet</p>
               <p className="max-w-sm text-sm text-[var(--muted)]">
-                Create a note and you&apos;ll get a share link instantly —
-                public or locked.
+                Create a note to generate a share link (public, password, or
+                email allowlist).
               </p>
               <Button onClick={() => router.push("/notes/new")}>
-                Write the first one
+                Create note
               </Button>
             </CardContent>
           </Card>

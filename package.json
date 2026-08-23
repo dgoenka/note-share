@@ -15,7 +15,9 @@
     "db:migrate": "pnpm --filter @note-share/api db:migrate",
     "db:push": "pnpm --filter @note-share/api db:push",
     "db:studio": "pnpm --filter @note-share/api db:studio",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter @note-share/api test",
+    "test:api": "pnpm --filter @note-share/api test"
   },
   "engines": {
     "node": ">=20"
