@@ -248,7 +248,7 @@ export function Softboard({
         )}
       </div>
 
-      {/* FABs */}
+      {/* FABs — matching labeled pills */}
       <div className="pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 z-30 flex flex-col items-end gap-2 sm:right-5">
         {!isMobile && (
           <button
@@ -266,12 +266,13 @@ export function Softboard({
         {tab === "mine" && (
           <button
             type="button"
-            className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--primary)] text-[#faf6ef] shadow-xl shadow-stone-900/25 transition hover:bg-[#4a3125] active:scale-95"
+            className="pointer-events-auto inline-flex h-11 items-center gap-2 rounded-full bg-[var(--primary)] px-3.5 text-sm font-semibold text-[#faf6ef] shadow-xl shadow-stone-900/25 transition hover:bg-[#4a3125] active:scale-95"
             aria-label="New note"
             title="New note"
             onClick={() => router.push("/notes/new")}
           >
-            <Plus className="h-7 w-7" />
+            <Plus className="h-4 w-4" />
+            New note
           </button>
         )}
       </div>

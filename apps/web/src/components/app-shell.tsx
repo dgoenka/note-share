@@ -88,7 +88,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       >
         <div
           className={cn(
-            "flex h-14 items-center justify-between gap-2 px-3 sm:h-16 sm:px-4",
+            "relative flex h-14 items-center justify-between gap-2 px-3 sm:h-16 sm:px-4",
             !isSoftboardChrome && "mx-auto max-w-3xl"
           )}
         >
@@ -108,17 +108,26 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               <span
                 className={cn(
                   "font-display truncate text-base font-semibold sm:text-lg",
-                  isSoftboardChrome ? "text-amber-950" : "text-stone-900"
+                  isSoftboardChrome ? "text-amber-950" : "text-stone-900",
+                  // Leave room for centered tabs on narrow softboard header
+                  isHomeBoard && "hidden sm:inline"
                 )}
               >
                 Note
                 <span className="text-[var(--accent)]">Share</span>
               </span>
             </Link>
-            {isHomeBoard && <BoardTabs />}
           </div>
 
-          <nav className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          {isHomeBoard && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="pointer-events-auto">
+                <BoardTabs />
+              </div>
+            </div>
+          )}
+
+          <nav className="relative z-10 flex shrink-0 items-center gap-1.5 sm:gap-2">
             {loading && (
               <span className="inline-flex items-center gap-2 rounded-full bg-[var(--primary-soft)] px-2.5 py-1.5 text-xs font-semibold text-[var(--primary)]">
                 <Spinner size="sm" />

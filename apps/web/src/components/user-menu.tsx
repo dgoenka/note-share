@@ -47,7 +47,9 @@ export function UserMenu({
       <button
         type="button"
         className={cn(
-          "inline-flex max-w-[10rem] items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold transition sm:max-w-[12rem] sm:px-2.5 sm:py-1.5",
+          "inline-flex max-w-[10rem] items-center gap-1.5 rounded-full text-xs font-semibold transition",
+          // Mobile: avatar-only circle; sm+: pill with name
+          "p-0.5 sm:max-w-[12rem] sm:px-2.5 sm:py-1.5",
           softboard
             ? "bg-amber-950/10 text-amber-950 hover:bg-amber-950/15"
             : "bg-[var(--primary-soft)] text-[var(--primary)] hover:bg-[#ead7c4]",
@@ -55,11 +57,12 @@ export function UserMenu({
         )}
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-label={user.name}
         onClick={() => setOpen((v) => !v)}
       >
         <span
           className={cn(
-            "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold sm:h-6 sm:w-6",
             softboard
               ? "bg-amber-950 text-[#faf6ef]"
               : "bg-[var(--primary)] text-[#faf6ef]"
@@ -67,9 +70,12 @@ export function UserMenu({
         >
           {initials || "?"}
         </span>
-        <span className="truncate">{user.name}</span>
+        <span className="hidden truncate sm:inline">{user.name}</span>
         <ChevronDown
-          className={cn("h-3.5 w-3.5 shrink-0 opacity-70 transition", open && "rotate-180")}
+          className={cn(
+            "hidden h-3.5 w-3.5 shrink-0 opacity-70 transition sm:block",
+            open && "rotate-180"
+          )}
         />
       </button>
 
