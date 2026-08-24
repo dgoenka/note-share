@@ -10,6 +10,8 @@ import {
   generateShareToken,
   hashSecret,
 } from "../lib/crypto.js";
+import { attachMediaToNote, mediaUrlsForHtml } from "../lib/media.js";
+import { sanitizeNoteHtml } from "../lib/sanitize-html.js";
 import { getNoteAccessibility } from "../lib/note-state.js";
 import { requireAuth, type AuthVariables } from "../middleware/auth.js";
 import type { Note, NoteAllowedEmail } from "@prisma/client";
@@ -18,7 +20,7 @@ type NoteWithEmails = Note & { allowedEmails?: NoteAllowedEmail[] };
 
 function toNoteDetail(
   note: NoteWithEmails,
-  options?: { accessKey?: string | null }
+  options?: { accessKey?: string | null; mediaUrls?: Record<string, string> }
 ): NoteDetail {
   const state = getNoteAccessibility(note);
   return {
@@ -44,6 +46,7 @@ function toNoteDetail(
     isAccessible: state.isAccessible,
     createdAt: note.createdAt.toISOString(),
     updatedAt: note.updatedAt.toISOString(),
+    mediaUrls: options?.mediaUrls,
   };
 }
 
@@ -89,10 +92,17 @@ notesRoutes.post("/", zValidator("json", createNoteSchema), async (c) => {
       ? [...new Set((body.allowedEmails ?? []).map((e) => e.toLowerCase()))]
       : [];
 
+  const content = sanitizeNoteHtml(body.content);
+  const textOnly = content.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+  const { extractMediaIds } = await import("../lib/sanitize-html.js");
+  if (!textOnly && extractMediaIds(content).length === 0) {
+    throw new HTTPException(400, { message: "Content is required" });
+  }
+
   const note = await prisma.note.create({
     data: {
       title: body.title,
-      content: body.content,
+      content,
       shareType: body.shareType,
       accessType: body.accessType,
       shareToken,
@@ -110,7 +120,10 @@ notesRoutes.post("/", zValidator("json", createNoteSchema), async (c) => {
     include: noteInclude,
   });
 
-  return c.json(toNoteDetail(note, { accessKey }), 201);
+  await attachMediaToNote(note.id, userId, content);
+  const mediaUrls = await mediaUrlsForHtml(content, userId);
+
+  return c.json(toNoteDetail(note, { accessKey, mediaUrls }), 201);
 });
 
 notesRoutes.get("/:id", async (c) => {
@@ -125,8 +138,9 @@ notesRoutes.get("/:id", async (c) => {
     throw new HTTPException(404, { message: "Note not found" });
   }
 
+  const mediaUrls = await mediaUrlsForHtml(note.content, userId);
   // Access key is only returned at creation time (never stored in plain form)
-  return c.json(toNoteDetail(note));
+  return c.json(toNoteDetail(note, { mediaUrls }));
 });
 
 /**

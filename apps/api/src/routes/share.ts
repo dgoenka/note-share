@@ -5,6 +5,7 @@ import type { ShareStatus, SharedNoteView } from "@note-share/shared";
 import { HTTPException } from "hono/http-exception";
 import { prisma } from "../db.js";
 import { verifySecret } from "../lib/crypto.js";
+import { mediaUrlsForHtml } from "../lib/media.js";
 import { getNoteAccessibility } from "../lib/note-state.js";
 import { checkRateLimit } from "../lib/rate-limit.js";
 import { optionalAuth, type OptionalAuthVariables } from "../middleware/auth.js";
@@ -12,7 +13,8 @@ import type { Note } from "@prisma/client";
 
 export const shareRoutes = new Hono<{ Variables: OptionalAuthVariables }>();
 
-function toSharedView(note: Note): SharedNoteView {
+async function toSharedView(note: Note): Promise<SharedNoteView> {
+  const mediaUrls = await mediaUrlsForHtml(note.content);
   return {
     title: note.title,
     content: note.content,
@@ -20,6 +22,7 @@ function toSharedView(note: Note): SharedNoteView {
     accessType: note.accessType,
     expiresAt: note.expiresAt?.toISOString() ?? null,
     viewCount: note.viewCount,
+    mediaUrls,
   };
 }
 
@@ -186,7 +189,7 @@ shareRoutes.post("/:token/open", optionalAuth, async (c) => {
     });
   }
 
-  return c.json(toSharedView(claimed));
+  return c.json(await toSharedView(claimed));
 });
 
 /**
@@ -242,6 +245,6 @@ shareRoutes.post(
       });
     }
 
-    return c.json(toSharedView(claimed));
+    return c.json(await toSharedView(claimed));
   }
 );

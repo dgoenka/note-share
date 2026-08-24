@@ -20,6 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { LoadingBlock, LoadingOverlay } from "@/components/ui/loading-block";
+import { RichContent } from "@/components/rich-text/rich-content";
 import { formatDateTime } from "@/lib/utils";
 
 export default function SharePage() {
@@ -160,8 +161,8 @@ export default function SharePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="whitespace-pre-wrap rounded-2xl border border-stone-200 bg-gradient-to-br from-white to-violet-50/60 p-5 text-sm leading-relaxed shadow-inner">
-            {view.content}
+          <div className="rounded-2xl border border-stone-200 bg-gradient-to-br from-white to-violet-50/60 p-5 shadow-inner">
+            <RichContent html={view.content} mediaUrls={view.mediaUrls} />
           </div>
           {view.shareType === "ONE_TIME" && (
             <Alert variant="warning" className="mt-4">

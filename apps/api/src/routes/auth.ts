@@ -80,5 +80,12 @@ authRoutes.get("/me", requireAuth, async (c) => {
     throw new HTTPException(401, { message: "Invalid session" });
   }
   const noteCount = await prisma.note.count({ where: { ownerId: userId } });
-  return c.json({ user: toPublicUser(user), noteCount });
+  const { getUserStorageBytes, storageLimit } = await import("../lib/media.js");
+  const storageBytesUsed = await getUserStorageBytes(userId);
+  return c.json({
+    user: toPublicUser(user),
+    noteCount,
+    storageBytesUsed,
+    storageBytesLimit: storageLimit(),
+  });
 });

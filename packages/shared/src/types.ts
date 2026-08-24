@@ -12,6 +12,7 @@ export interface PublicUser {
 export interface NoteDetail {
   id: string;
   title: string;
+  /** Sanitized HTML (TipTap). Media uses data-media-id; see mediaUrls. */
   content: string;
   shareType: ShareType;
   accessType: AccessType;
@@ -31,16 +32,33 @@ export interface NoteDetail {
   isAccessible: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Short-lived signed URLs keyed by MediaAsset id */
+  mediaUrls?: Record<string, string>;
 }
 
 /** Payload returned when a share link is successfully opened */
 export interface SharedNoteView {
   title: string;
+  /** Sanitized HTML; media via mediaUrls */
   content: string;
   shareType: ShareType;
   accessType: AccessType;
   expiresAt: string | null;
   viewCount: number;
+  mediaUrls?: Record<string, string>;
+}
+
+export interface MediaUploadResponse {
+  id: string;
+  path: string;
+  mimeType: string;
+  byteSize: number;
+  kind: "IMAGE" | "VIDEO";
+}
+
+export interface StorageQuota {
+  storageBytesUsed: number;
+  storageBytesLimit: number;
 }
 
 /**

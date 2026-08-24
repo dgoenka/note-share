@@ -3,11 +3,13 @@ import type {
   BoardPage,
   CreateNoteInput,
   LoginInput,
+  MediaUploadResponse,
   NoteDetail,
   PublicUser,
   RegisterInput,
   ShareStatus,
   SharedNoteView,
+  StorageQuota,
 } from "@note-share/shared";
 
 const API_URL =
@@ -64,7 +66,41 @@ export const api = {
     request<AuthResponse>("/auth/login", { method: "POST", body }),
 
   me: (token: string) =>
-    request<{ user: PublicUser; noteCount: number }>("/auth/me", { token }),
+    request<
+      { user: PublicUser; noteCount: number } & StorageQuota
+    >("/auth/me", { token }),
+
+  uploadMedia: async (token: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`${API_URL}/media/upload`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: form,
+      cache: "no-store",
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new ApiError(
+        (data as { error?: string }).error || res.statusText || "Upload failed",
+        res.status
+      );
+    }
+    return data as MediaUploadResponse;
+  },
+
+  signMedia: (token: string, ids: string[]) =>
+    request<{ urls: Record<string, string> }>("/media/sign", {
+      method: "POST",
+      body: { ids },
+      token,
+    }),
+
+  mediaQuota: (token: string) =>
+    request<StorageQuota>("/media/quota", { token }),
 
   listNotes: (token: string) =>
     request<{ notes: NoteDetail[] }>("/notes", { token }),

@@ -8,6 +8,28 @@ Job-application POC: create notes and share them with **expiring** links (one-ti
 **Live (`main`):** https://note-share-ruby.vercel.app · API https://api-production-26060.up.railway.app  
 **Alias:** https://note-share-softboard.vercel.app (same softboard product)
 
+## Rich text + media (`rich-text-media` branch)
+
+TipTap editor (free OSS) with images/video uploads and YouTube/Vimeo embeds. Uploads go to a **private** Supabase Storage bucket; the API mints short-lived signed URLs when a note is opened. Quotas: **3 MB / file**, **40 MB / user** (shown on `/profile`).
+
+### Supabase setup (once)
+
+1. Create a project at https://supabase.com  
+2. **Storage → New bucket** named `note-media` → **Private**  
+3. Leave end-user Storage policies empty; the API uses the **service role**  
+4. Project Settings → API: copy `SUPABASE_URL` and `service_role` key  
+5. Put on the API (never in `NEXT_PUBLIC_*`):
+
+```bash
+SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+MEDIA_BUCKET=note-media
+```
+
+6. Run migrations / `pnpm db:push` on the branch DB so `media_assets` exists  
+
+Live softboard on `main` is unchanged until you cut this branch over.
+
 ## Softboard (default on `main`)
 
 | | |

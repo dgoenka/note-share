@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/utils";
 import { LoadingBlock, LoadingOverlay } from "@/components/ui/loading-block";
+import { RichContent } from "@/components/rich-text/rich-content";
 
 export default function NoteDetailPage() {
   return (
@@ -194,8 +195,8 @@ function NoteDetailView() {
               <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
                 Content
               </h4>
-              <div className="whitespace-pre-wrap rounded-2xl border border-stone-200 bg-gradient-to-br from-white to-violet-50/50 p-5 text-sm leading-relaxed">
-                {note.content}
+              <div className="rounded-2xl border border-stone-200 bg-gradient-to-br from-white to-violet-50/50 p-5">
+                <RichContent html={note.content} mediaUrls={note.mediaUrls} />
               </div>
             </div>
 

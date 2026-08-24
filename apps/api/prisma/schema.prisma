@@ -8,13 +8,14 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
+  id           String       @id @default(cuid())
   name         String
-  email        String   @unique
+  email        String       @unique
   passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
   notes        Note[]
+  mediaAssets  MediaAsset[]
 
   @@map("users")
 }
@@ -22,6 +23,7 @@ model User {
 model Note {
   id               String             @id @default(cuid())
   title            String
+  /// Sanitized HTML from TipTap (media referenced via data-media-id)
   content          String
   shareType        ShareType
   accessType       AccessType
@@ -39,6 +41,7 @@ model Note {
   ownerId          String
   owner            User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   allowedEmails    NoteAllowedEmail[]
+  mediaAssets      MediaAsset[]
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
@@ -46,6 +49,30 @@ model Note {
   @@index([shareToken])
   @@index([accessType, createdAt])
   @@map("notes")
+}
+
+/// Uploaded image/video in private Supabase Storage (quota tracked per user)
+model MediaAsset {
+  id        String    @id @default(cuid())
+  ownerId   String
+  owner     User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  noteId    String?
+  note      Note?     @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  /// Bucket object key: {userId}/{assetId}.{ext}
+  path      String
+  mimeType  String
+  byteSize  Int
+  kind      MediaKind
+  createdAt DateTime  @default(now())
+
+  @@index([ownerId])
+  @@index([noteId])
+  @@map("media_assets")
+}
+
+enum MediaKind {
+  IMAGE
+  VIDEO
 }
 
 /// Allowlist entry for RESTRICTED notes (email must match a logged-in user)

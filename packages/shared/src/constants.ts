@@ -12,7 +12,14 @@ export const ACCESS_TYPES = ["PUBLIC", "PASSWORD", "RESTRICTED"] as const;
 export type AccessType = (typeof ACCESS_TYPES)[number];
 
 export const NOTE_TITLE_MAX = 200;
-export const NOTE_CONTENT_MAX = 50_000;
+/** HTML body from TipTap (markup included; media bytes tracked separately) */
+export const NOTE_CONTENT_MAX = 100_000;
+
+/** Uploaded media quotas (POC) */
+export const MEDIA_MAX_BYTES_PER_FILE = 3 * 1024 * 1024; // 3 MB
+export const MEDIA_MAX_BYTES_PER_USER = 40 * 1024 * 1024; // 40 MB
+export const MEDIA_KINDS = ["IMAGE", "VIDEO"] as const;
+export type MediaKind = (typeof MEDIA_KINDS)[number];
 export const PASSWORD_MIN = 8;
 export const PASSWORD_MAX = 128;
 export const EMAIL_MAX = 255;

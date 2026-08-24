@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Alert } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import { formatDateTime } from "@/lib/utils";
+import { RichContent } from "@/components/rich-text/rich-content";
 
 export function PostItDialog({
   pin,
@@ -79,6 +80,7 @@ export function PostItDialog({
   }
 
   const body = detail?.content ?? shared?.content;
+  const mediaUrls = detail?.mediaUrls ?? shared?.mediaUrls;
   const meta = detail ?? shared;
 
   return (
@@ -124,9 +126,7 @@ export function PostItDialog({
 
         {body && (
           <div className="space-y-3">
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-stone-800">
-              {body}
-            </p>
+            <RichContent html={body} mediaUrls={mediaUrls} />
             {meta && (
               <p className="text-xs text-stone-500">
                 {meta.shareType === "ONE_TIME" ? "One-time" : "Time-based"}

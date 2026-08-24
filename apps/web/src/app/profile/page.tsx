@@ -24,9 +24,17 @@ export default function ProfilePage() {
   );
 }
 
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function ProfileView() {
   const { user, token, refresh } = useAuth();
   const [noteCount, setNoteCount] = useState<number | null>(null);
+  const [storageUsed, setStorageUsed] = useState(0);
+  const [storageLimit, setStorageLimit] = useState(40 * 1024 * 1024);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,7 +47,11 @@ function ProfileView() {
       try {
         await refresh();
         const me = await api.me(token);
-        if (!cancelled) setNoteCount(me.noteCount ?? 0);
+        if (!cancelled) {
+          setNoteCount(me.noteCount ?? 0);
+          setStorageUsed(me.storageBytesUsed ?? 0);
+          setStorageLimit(me.storageBytesLimit ?? 40 * 1024 * 1024);
+        }
       } catch (err) {
         if (!cancelled) {
           setError(
@@ -83,6 +95,26 @@ function ProfileView() {
             <dd className="text-lg font-bold text-stone-900">
               {noteCount ?? "—"}
             </dd>
+          </div>
+          <div className="space-y-2 rounded-2xl border border-stone-200 bg-white/60 px-4 py-3">
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <dt className="font-semibold text-stone-600">Media storage</dt>
+              <dd className="font-bold text-stone-900">
+                {formatBytes(storageUsed)} / {formatBytes(storageLimit)}
+              </dd>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-stone-200">
+              <div
+                className="h-full rounded-full bg-[var(--primary)] transition-all"
+                style={{
+                  width: `${Math.min(100, (storageUsed / Math.max(storageLimit, 1)) * 100)}%`,
+                }}
+              />
+            </div>
+            <p className="text-[11px] text-stone-500">
+              Images &amp; uploaded videos count toward this quota (embeds do
+              not). Max 3 MB per file.
+            </p>
           </div>
           <div className="flex items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-white/60 px-4 py-3">
             <dt className="font-semibold text-stone-600">User id</dt>

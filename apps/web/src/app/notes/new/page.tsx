@@ -14,8 +14,8 @@ import { useAuth } from "@/lib/auth-context";
 import { api, ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { NoteEditor } from "@/components/rich-text/note-editor";
 import {
   Card,
   CardContent,
@@ -203,15 +203,15 @@ function NewNoteForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="content">Content</Label>
-                <Textarea
-                  id="content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Write the secret sauce…"
-                  required
-                  rows={8}
-                />
+                <Label>Content</Label>
+                {token ? (
+                  <NoteEditor
+                    token={token}
+                    value={content}
+                    onChange={setContent}
+                    disabled={submitting}
+                  />
+                ) : null}
                 {fieldErrors.content && (
                   <p className="text-xs text-rose-600">{fieldErrors.content}</p>
                 )}
