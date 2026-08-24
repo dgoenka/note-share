@@ -102,6 +102,15 @@ export const api = {
   mediaQuota: (token: string) =>
     request<StorageQuota>("/media/quota", { token }),
 
+  unfurlLink: (token: string, url: string) =>
+    request<{
+      url: string;
+      title: string;
+      description: string;
+      image: string;
+      siteName: string;
+    }>("/links/unfurl", { method: "POST", body: { url }, token }),
+
   listNotes: (token: string) =>
     request<{ notes: NoteDetail[] }>("/notes", { token }),
 

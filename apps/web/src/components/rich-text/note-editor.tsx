@@ -7,15 +7,22 @@ import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import Youtube from "@tiptap/extension-youtube";
 import Placeholder from "@tiptap/extension-placeholder";
+import { TextStyle } from "@tiptap/extension-text-style";
+import FontFamily from "@tiptap/extension-font-family";
+import Underline from "@tiptap/extension-underline";
+import { Color } from "@tiptap/extension-color";
+import Highlight from "@tiptap/extension-highlight";
 import {
   Bold,
   Heading2,
+  Highlighter,
   ImageIcon,
   Italic,
   Link2,
   List,
   ListOrdered,
   Strikethrough,
+  Underline as UnderlineIcon,
   Video,
 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
@@ -23,6 +30,13 @@ import { prepareMediaFile } from "@/lib/compress-media";
 import { cn } from "@/lib/utils";
 import { UploadedVideo } from "@/components/rich-text/uploaded-video";
 import { Vimeo, toVimeoEmbed } from "@/components/rich-text/vimeo-embed";
+import { FontSize } from "@/components/rich-text/font-size";
+import { LinkPreview } from "@/components/rich-text/link-preview";
+import {
+  NOTE_FONTS,
+  NOTE_FONT_SIZES,
+  NOTE_FONTS_STYLESHEET,
+} from "@/components/rich-text/fonts";
 
 function ToolbarButton({
   active,
@@ -53,6 +67,24 @@ function ToolbarButton({
   );
 }
 
+const TEXT_COLORS = [
+  "#1c1917",
+  "#b45309",
+  "#be123c",
+  "#1d4ed8",
+  "#15803d",
+  "#7c3aed",
+];
+
+function isHttpUrl(text: string): boolean {
+  try {
+    const u = new URL(text);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function NoteEditor({
   token,
   value,
@@ -69,12 +101,28 @@ export function NoteEditor({
   const fileRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    const id = "note-share-editor-fonts";
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href = NOTE_FONTS_STYLESHEET;
+    document.head.appendChild(link);
+  }, []);
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
       }),
+      TextStyle,
+      FontFamily,
+      FontSize,
+      Underline,
+      Color,
+      Highlight.configure({ multicolor: true }),
       Link.configure({
         openOnClick: false,
         HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" },
@@ -103,9 +151,10 @@ export function NoteEditor({
       }),
       Vimeo,
       UploadedVideo,
+      LinkPreview,
       Placeholder.configure({
         placeholder:
-          "Write your note… Paste a YouTube/Vimeo link to embed. Attach images or short videos.",
+          "Write your note… Paste YouTube/Vimeo to embed, or any link (Amazon, etc.) for a preview card.",
       }),
     ],
     content: value || "",
@@ -130,6 +179,45 @@ export function NoteEditor({
             type: "vimeo",
             attrs: { src: vimeo },
           });
+          return true;
+        }
+        if (isHttpUrl(text) && !/\s/.test(text)) {
+          event.preventDefault();
+          void (async () => {
+            try {
+              setUploadError(null);
+              setUploading(true);
+              const preview = await api.unfurlLink(token, text);
+              editor.commands.insertContent({
+                type: "linkPreview",
+                attrs: {
+                  url: preview.url,
+                  title: preview.title,
+                  description: preview.description,
+                  image: preview.image,
+                  siteName: preview.siteName,
+                },
+              });
+              onChange(editor.getHTML());
+            } catch (err) {
+              // Fallback: plain link
+              editor
+                .chain()
+                .focus()
+                .insertContent(
+                  `<p><a href="${text}" target="_blank" rel="noopener noreferrer">${text}</a></p>`
+                )
+                .run();
+              onChange(editor.getHTML());
+              setUploadError(
+                err instanceof ApiError
+                  ? `Preview unavailable — inserted as link (${err.message})`
+                  : "Preview unavailable — inserted as link"
+              );
+            } finally {
+              setUploading(false);
+            }
+          })();
           return true;
         }
         return false;
@@ -170,7 +258,6 @@ export function NoteEditor({
               alt: file.name,
             })
             .run();
-          // Attach media id on the just-inserted image node
           editor.commands.command(({ tr, state, dispatch }) => {
             let pos: number | null = null;
             state.doc.descendants((node, p) => {
@@ -227,9 +314,47 @@ export function NoteEditor({
     );
   }
 
+  const currentFont =
+    (editor.getAttributes("textStyle").fontFamily as string) || "";
+  const currentSize =
+    (editor.getAttributes("textStyle").fontSize as string) || "16px";
+
   return (
     <div className="overflow-hidden rounded-xl border border-stone-200 bg-white/90 shadow-sm">
       <div className="flex flex-wrap items-center gap-0.5 border-b border-stone-100 bg-stone-50/80 px-1.5 py-1">
+        <select
+          className="h-8 max-w-[9.5rem] rounded-lg border-0 bg-transparent px-1 text-xs font-semibold text-stone-700"
+          title="Font"
+          value={currentFont}
+          disabled={disabled}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (!v) editor.chain().focus().unsetFontFamily().run();
+            else editor.chain().focus().setFontFamily(v).run();
+          }}
+        >
+          {NOTE_FONTS.map((f) => (
+            <option key={f.label} value={f.value} style={{ fontFamily: f.value || undefined }}>
+              {f.label}
+            </option>
+          ))}
+        </select>
+        <select
+          className="h-8 rounded-lg border-0 bg-transparent px-1 text-xs font-semibold text-stone-700"
+          title="Size"
+          value={currentSize}
+          disabled={disabled}
+          onChange={(e) => {
+            editor.chain().focus().setFontSize(e.target.value).run();
+          }}
+        >
+          {NOTE_FONT_SIZES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+        <span className="mx-1 h-5 w-px bg-stone-200" />
         <ToolbarButton
           title="Bold"
           active={editor.isActive("bold")}
@@ -245,12 +370,39 @@ export function NoteEditor({
           <Italic className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton
+          title="Underline"
+          active={editor.isActive("underline")}
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+        >
+          <UnderlineIcon className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton
           title="Strike"
           active={editor.isActive("strike")}
           onClick={() => editor.chain().focus().toggleStrike().run()}
         >
           <Strikethrough className="h-4 w-4" />
         </ToolbarButton>
+        <ToolbarButton
+          title="Highlight"
+          active={editor.isActive("highlight")}
+          onClick={() =>
+            editor.chain().focus().toggleHighlight({ color: "#fef08a" }).run()
+          }
+        >
+          <Highlighter className="h-4 w-4" />
+        </ToolbarButton>
+        <div className="flex items-center gap-0.5 px-1" title="Text color">
+          {TEXT_COLORS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className="h-4 w-4 rounded-full ring-1 ring-stone-300"
+              style={{ backgroundColor: c }}
+              onClick={() => editor.chain().focus().setColor(c).run()}
+            />
+          ))}
+        </div>
         <ToolbarButton
           title="Heading"
           active={editor.isActive("heading", { level: 2 })}
@@ -329,19 +481,19 @@ export function NoteEditor({
         />
         {uploading && (
           <span className="ml-2 text-xs font-semibold text-stone-500">
-            Uploading…
+            Working…
           </span>
         )}
       </div>
       <EditorContent editor={editor} />
       {uploadError && (
-        <p className="border-t border-rose-100 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-800">
+        <p className="border-t border-amber-100 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
           {uploadError}
         </p>
       )}
       <p className="border-t border-stone-100 px-3 py-1.5 text-[11px] text-stone-500">
-        Paste YouTube or Vimeo URLs to embed. Images are compressed; videos max 3
-        MB. Storage quota shown on your profile.
+        Fonts + colors in the toolbar. Paste Amazon/article links for a preview
+        card; YouTube/Vimeo embed as video.
       </p>
     </div>
   );

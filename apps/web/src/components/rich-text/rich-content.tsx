@@ -60,6 +60,7 @@ export function RichContent({
         "[&_video]:my-3 [&_video]:max-h-96 [&_video]:w-full [&_video]:rounded-lg",
         "[&_iframe]:my-3 [&_iframe]:aspect-video [&_iframe]:w-full [&_iframe]:max-w-full [&_iframe]:rounded-lg",
         "[&_a]:text-[var(--accent)] [&_a]:underline",
+        "[&_.link-preview]:my-3",
         className
       )}
       dangerouslySetInnerHTML={{ __html: hydrated }}
