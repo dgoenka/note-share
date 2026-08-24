@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import DOMPurify from "isomorphic-dompurify";
 import { cn } from "@/lib/utils";
+import { NOTE_FONTS_STYLESHEET } from "@/components/rich-text/fonts";
 
 /**
  * Render sanitized note HTML and hydrate private media via signed URLs.
@@ -17,6 +18,16 @@ export function RichContent({
   mediaUrls?: Record<string, string> | null;
   className?: string;
 }) {
+  useEffect(() => {
+    const id = "note-share-editor-fonts";
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href = NOTE_FONTS_STYLESHEET;
+    document.head.appendChild(link);
+  }, []);
+
   const hydrated = useMemo(() => {
     let next = html || "";
     if (mediaUrls) {
@@ -29,7 +40,6 @@ export function RichContent({
           ),
           `$1 src="${url}"`
         );
-        // If no src yet, inject one
         next = next.replace(
           new RegExp(
             `(<(?:img|video)(?![^>]*\\ssrc=)[^>]*data-media-id=["']${safeId}["'][^>]*)(>)`,
@@ -42,11 +52,20 @@ export function RichContent({
     return DOMPurify.sanitize(next, {
       ADD_TAGS: ["iframe"],
       ADD_ATTR: [
+        "style",
+        "class",
         "allow",
         "allowfullscreen",
         "frameborder",
         "target",
+        "rel",
         "data-media-id",
+        "data-link-preview",
+        "data-url",
+        "data-title",
+        "data-description",
+        "data-image",
+        "data-site",
         "controls",
       ],
     });
@@ -55,7 +74,7 @@ export function RichContent({
   return (
     <div
       className={cn(
-        "rich-content prose prose-stone max-w-none text-sm leading-relaxed text-stone-800",
+        "rich-content max-w-none text-sm leading-relaxed text-stone-800",
         "[&_img]:my-3 [&_img]:max-h-96 [&_img]:rounded-lg [&_img]:border [&_img]:border-stone-200",
         "[&_video]:my-3 [&_video]:max-h-96 [&_video]:w-full [&_video]:rounded-lg",
         "[&_iframe]:my-3 [&_iframe]:aspect-video [&_iframe]:w-full [&_iframe]:max-w-full [&_iframe]:rounded-lg",

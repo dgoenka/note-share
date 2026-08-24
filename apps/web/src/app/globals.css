@@ -139,6 +139,20 @@ canvas {
   animation-delay: 0.28s;
 }
 
+/* TipTap editor */
+.note-editor-prose.ProseMirror,
+.ProseMirror.note-editor-prose {
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+/* Placeholder (StarterKit / Placeholder extension) */
+.note-editor-prose.ProseMirror p.is-editor-empty:first-child::before {
+  color: #a8a29e;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
 /* Rich note link snapshot cards (OG unfurl) */
 .link-preview {
   margin: 0.75rem 0;

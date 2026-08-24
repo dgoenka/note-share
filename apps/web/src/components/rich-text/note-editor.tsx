@@ -7,10 +7,8 @@ import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import Youtube from "@tiptap/extension-youtube";
 import Placeholder from "@tiptap/extension-placeholder";
-import { TextStyle } from "@tiptap/extension-text-style";
-import FontFamily from "@tiptap/extension-font-family";
+import { TextStyleKit } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
-import { Color } from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import {
   Bold,
@@ -25,18 +23,23 @@ import {
   Underline as UnderlineIcon,
   Video,
 } from "lucide-react";
+import type { Editor } from "@tiptap/react";
 import { api, ApiError } from "@/lib/api";
 import { prepareMediaFile } from "@/lib/compress-media";
 import { cn } from "@/lib/utils";
 import { UploadedVideo } from "@/components/rich-text/uploaded-video";
 import { Vimeo, toVimeoEmbed } from "@/components/rich-text/vimeo-embed";
-import { FontSize } from "@/components/rich-text/font-size";
 import { LinkPreview } from "@/components/rich-text/link-preview";
 import {
   NOTE_FONTS,
   NOTE_FONT_SIZES,
   NOTE_FONTS_STYLESHEET,
 } from "@/components/rich-text/fonts";
+
+/** Keep editor selection when interacting with toolbar controls. */
+function keepSelection(e: React.SyntheticEvent) {
+  e.preventDefault();
+}
 
 function ToolbarButton({
   active,
@@ -56,9 +59,10 @@ function ToolbarButton({
       type="button"
       title={title}
       disabled={disabled}
+      onMouseDown={keepSelection}
       onClick={onClick}
       className={cn(
-        "inline-flex h-8 w-8 items-center justify-center rounded-lg text-stone-700 transition hover:bg-stone-200/80 disabled:opacity-40",
+        "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-stone-700 transition hover:bg-stone-200/80 disabled:opacity-40",
         active && "bg-stone-200 text-stone-900"
       )}
     >
@@ -85,6 +89,15 @@ function isHttpUrl(text: string): boolean {
   }
 }
 
+function withPreservedSelection(editor: Editor, run: () => void) {
+  const { from, to } = editor.state.selection;
+  editor.view.focus();
+  if (from !== to) {
+    editor.commands.setTextSelection({ from, to });
+  }
+  run();
+}
+
 export function NoteEditor({
   token,
   value,
@@ -100,6 +113,7 @@ export function NoteEditor({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
+  const savedSelection = useRef<{ from: number; to: number } | null>(null);
 
   useEffect(() => {
     const id = "note-share-editor-fonts";
@@ -117,11 +131,12 @@ export function NoteEditor({
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
       }),
-      TextStyle,
-      FontFamily,
-      FontSize,
+      // TipTap v3: one kit merges font-family / font-size / color into a single style attr
+      TextStyleKit.configure({
+        backgroundColor: false,
+        lineHeight: false,
+      }),
       Underline,
-      Color,
       Highlight.configure({ multicolor: true }),
       Link.configure({
         openOnClick: false,
@@ -154,7 +169,7 @@ export function NoteEditor({
       LinkPreview,
       Placeholder.configure({
         placeholder:
-          "Write your note… Paste YouTube/Vimeo to embed, or any link (Amazon, etc.) for a preview card.",
+          "Write your note… Select text, then pick a font/size. Paste links for preview cards.",
       }),
     ],
     content: value || "",
@@ -162,7 +177,7 @@ export function NoteEditor({
     editorProps: {
       attributes: {
         class:
-          "min-h-[12rem] max-h-[28rem] overflow-y-auto px-3 py-2 text-sm leading-relaxed focus:outline-none",
+          "note-editor-prose min-h-[12rem] max-h-[28rem] overflow-y-auto px-3 py-2 text-sm leading-relaxed focus:outline-none",
       },
       handlePaste(_view, event) {
         const text = event.clipboardData?.getData("text/plain")?.trim();
@@ -200,7 +215,6 @@ export function NoteEditor({
               });
               onChange(editor.getHTML());
             } catch (err) {
-              // Fallback: plain link
               editor
                 .chain()
                 .focus()
@@ -233,6 +247,18 @@ export function NoteEditor({
     editor.setEditable(!disabled);
   }, [editor, disabled]);
 
+  const rememberSelection = useCallback(() => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    savedSelection.current = { from, to };
+  }, [editor]);
+
+  const restoreSelection = useCallback(() => {
+    if (!editor || !savedSelection.current) return;
+    const { from, to } = savedSelection.current;
+    editor.chain().focus().setTextSelection({ from, to }).run();
+  }, [editor]);
+
   const uploadAndInsert = useCallback(
     async (file: File, asVideo: boolean) => {
       if (!editor || !token) return;
@@ -250,14 +276,7 @@ export function NoteEditor({
         const signed = await api.signMedia(token, [uploaded.id]);
         const src = signed.urls[uploaded.id] || "";
         if (uploaded.kind === "IMAGE") {
-          editor
-            .chain()
-            .focus()
-            .setImage({
-              src,
-              alt: file.name,
-            })
-            .run();
+          editor.chain().focus().setImage({ src, alt: file.name }).run();
           editor.commands.command(({ tr, state, dispatch }) => {
             let pos: number | null = null;
             state.doc.descendants((node, p) => {
@@ -314,47 +333,109 @@ export function NoteEditor({
     );
   }
 
-  const currentFont =
-    (editor.getAttributes("textStyle").fontFamily as string) || "";
-  const currentSize =
-    (editor.getAttributes("textStyle").fontSize as string) || "16px";
+  const styleAttrs = editor.getAttributes("textStyle") as {
+    fontFamily?: string | null;
+    fontSize?: string | null;
+    color?: string | null;
+  };
+  const currentFont = styleAttrs.fontFamily || "";
+  const currentSize = styleAttrs.fontSize || "";
 
   return (
-    <div className="overflow-hidden rounded-xl border border-stone-200 bg-white/90 shadow-sm">
-      <div className="flex flex-wrap items-center gap-0.5 border-b border-stone-100 bg-stone-50/80 px-1.5 py-1">
-        <select
-          className="h-8 max-w-[9.5rem] rounded-lg border-0 bg-transparent px-1 text-xs font-semibold text-stone-700"
-          title="Font"
-          value={currentFont}
-          disabled={disabled}
-          onChange={(e) => {
-            const v = e.target.value;
-            if (!v) editor.chain().focus().unsetFontFamily().run();
-            else editor.chain().focus().setFontFamily(v).run();
-          }}
-        >
-          {NOTE_FONTS.map((f) => (
-            <option key={f.label} value={f.value} style={{ fontFamily: f.value || undefined }}>
-              {f.label}
-            </option>
+    <div className="rounded-xl border border-stone-200 bg-white/90 shadow-sm">
+      {/* Row 1 — type controls (need room; was getting clipped/cramped) */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-stone-100 bg-stone-50/90 px-2 py-2">
+        <label className="flex min-w-0 flex-1 items-center gap-1.5 sm:max-w-[14rem]">
+          <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-stone-500">
+            Font
+          </span>
+          <select
+            className="h-9 min-w-0 flex-1 rounded-lg border border-stone-300 bg-white px-2 text-xs font-semibold text-stone-800 shadow-sm"
+            title="Font family"
+            value={currentFont}
+            disabled={disabled}
+            onMouseDown={rememberSelection}
+            onFocus={rememberSelection}
+            onChange={(e) => {
+              const v = e.target.value;
+              restoreSelection();
+              withPreservedSelection(editor, () => {
+                if (!v) editor.chain().focus().unsetFontFamily().run();
+                else editor.chain().focus().setFontFamily(v).run();
+              });
+              onChange(editor.getHTML());
+            }}
+          >
+            {NOTE_FONTS.map((f) => (
+              <option
+                key={f.label}
+                value={f.value}
+                style={{ fontFamily: f.value || undefined }}
+              >
+                {f.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="flex items-center gap-1.5">
+          <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-stone-500">
+            Size
+          </span>
+          <select
+            className="h-9 rounded-lg border border-stone-300 bg-white px-2 text-xs font-semibold text-stone-800 shadow-sm"
+            title="Font size"
+            value={currentSize}
+            disabled={disabled}
+            onMouseDown={rememberSelection}
+            onFocus={rememberSelection}
+            onChange={(e) => {
+              const v = e.target.value;
+              restoreSelection();
+              withPreservedSelection(editor, () => {
+                if (!v) editor.chain().focus().unsetFontSize().run();
+                else editor.chain().focus().setFontSize(v).run();
+              });
+              onChange(editor.getHTML());
+            }}
+          >
+            <option value="">Default</option>
+            {NOTE_FONT_SIZES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label} ({s.value})
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="flex items-center gap-1" title="Text color">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-stone-500">
+            Color
+          </span>
+          {TEXT_COLORS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className="h-5 w-5 rounded-full ring-1 ring-stone-300"
+              style={{ backgroundColor: c }}
+              onMouseDown={(e) => {
+                keepSelection(e);
+                rememberSelection();
+              }}
+              onClick={() => {
+                restoreSelection();
+                withPreservedSelection(editor, () => {
+                  editor.chain().focus().setColor(c).run();
+                });
+                onChange(editor.getHTML());
+              }}
+            />
           ))}
-        </select>
-        <select
-          className="h-8 rounded-lg border-0 bg-transparent px-1 text-xs font-semibold text-stone-700"
-          title="Size"
-          value={currentSize}
-          disabled={disabled}
-          onChange={(e) => {
-            editor.chain().focus().setFontSize(e.target.value).run();
-          }}
-        >
-          {NOTE_FONT_SIZES.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-        <span className="mx-1 h-5 w-px bg-stone-200" />
+        </div>
+      </div>
+
+      {/* Row 2 — format + media */}
+      <div className="flex flex-wrap items-center gap-0.5 border-b border-stone-100 bg-stone-50/60 px-1.5 py-1.5">
         <ToolbarButton
           title="Bold"
           active={editor.isActive("bold")}
@@ -392,17 +473,6 @@ export function NoteEditor({
         >
           <Highlighter className="h-4 w-4" />
         </ToolbarButton>
-        <div className="flex items-center gap-0.5 px-1" title="Text color">
-          {TEXT_COLORS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              className="h-4 w-4 rounded-full ring-1 ring-stone-300"
-              style={{ backgroundColor: c }}
-              onClick={() => editor.chain().focus().setColor(c).run()}
-            />
-          ))}
-        </div>
         <ToolbarButton
           title="Heading"
           active={editor.isActive("heading", { level: 2 })}
@@ -437,7 +507,12 @@ export function NoteEditor({
               editor.chain().focus().unsetLink().run();
               return;
             }
-            editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+            editor
+              .chain()
+              .focus()
+              .extendMarkRange("link")
+              .setLink({ href: url })
+              .run();
           }}
         >
           <Link2 className="h-4 w-4" />
@@ -485,6 +560,7 @@ export function NoteEditor({
           </span>
         )}
       </div>
+
       <EditorContent editor={editor} />
       {uploadError && (
         <p className="border-t border-amber-100 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
@@ -492,8 +568,8 @@ export function NoteEditor({
         </p>
       )}
       <p className="border-t border-stone-100 px-3 py-1.5 text-[11px] text-stone-500">
-        Fonts + colors in the toolbar. Paste Amazon/article links for a preview
-        card; YouTube/Vimeo embed as video.
+        Tip: select text first, then change Font / Size. Paste product links for
+        a snapshot card.
       </p>
     </div>
   );
