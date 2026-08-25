@@ -343,7 +343,7 @@ function NewNoteForm() {
                           ? "Add another…"
                           : "friend@example.com"
                       }
-                      className="min-w-[10rem] flex-1 border-0 bg-transparent px-1 py-1 text-sm outline-none placeholder:text-violet-400/80"
+                      className="min-w-[10rem] flex-1 border-0 bg-transparent px-1 py-1 text-sm outline-none placeholder:text-stone-400/90"
                     />
                   </div>
                   <p className="text-xs text-[var(--muted)]">

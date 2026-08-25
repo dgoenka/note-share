@@ -195,7 +195,7 @@ function NoteDetailView() {
               <h4 className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
                 Content
               </h4>
-              <div className="rounded-2xl border border-stone-200 bg-gradient-to-br from-white to-violet-50/50 p-5">
+              <div className="rounded-2xl border border-stone-200 bg-gradient-to-br from-white to-amber-50/70 p-5">
                 <RichContent html={note.content} mediaUrls={note.mediaUrls} />
               </div>
             </div>
@@ -210,7 +210,7 @@ function NoteDetailView() {
                     href={busy ? undefined : note.shareUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="break-all font-mono text-xs text-[var(--primary)] underline decoration-violet-300 underline-offset-2"
+                    className="break-all font-mono text-xs text-[var(--primary)] underline decoration-amber-300 underline-offset-2"
                     tabIndex={busy ? -1 : undefined}
                     aria-disabled={busy || undefined}
                     onClick={(e) => {

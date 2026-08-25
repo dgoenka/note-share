@@ -161,7 +161,7 @@ export default function SharePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-2xl border border-stone-200 bg-gradient-to-br from-white to-violet-50/60 p-5 shadow-inner">
+          <div className="rounded-2xl border border-stone-200 bg-gradient-to-br from-white to-amber-50/70 p-5 shadow-inner">
             <RichContent html={view.content} mediaUrls={view.mediaUrls} />
           </div>
           {view.shareType === "ONE_TIME" && (
@@ -292,7 +292,7 @@ export default function SharePage() {
                 </Link>
                 <Link
                   href={`/register?next=${encodeURIComponent(`/share/${shareToken}`)}`}
-                  className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-violet-200/80 bg-white/70 px-4 text-sm font-semibold text-violet-950 sm:w-auto"
+                  className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-amber-900/20 bg-white/70 px-4 text-sm font-semibold text-amber-950 sm:w-auto"
                 >
                   Create account
                 </Link>

@@ -13,7 +13,7 @@ export function Alert({
       className={cn(
         "rounded-2xl border px-4 py-3 text-sm",
         variant === "default" &&
-          "border-violet-200 bg-violet-50/90 text-stone-900",
+          "border-amber-200/80 bg-amber-50/90 text-stone-900",
         variant === "destructive" &&
           "border-rose-200 bg-rose-50 text-rose-900",
         variant === "success" &&
