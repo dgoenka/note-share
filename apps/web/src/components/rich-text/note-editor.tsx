@@ -411,7 +411,7 @@ export function NoteEditor({
           <ALargeSmall className="pointer-events-none absolute left-1.5 h-3.5 w-3.5 text-stone-600" />
           <select
             aria-label="Font size"
-            className="h-8 w-[4.25rem] cursor-pointer appearance-none rounded-lg border-0 bg-transparent py-0 pl-7 pr-4 text-[11px] font-semibold text-stone-800"
+            className="h-8 w-[calc(4.25rem+10px)] cursor-pointer appearance-none rounded-lg border-0 bg-transparent py-0 pl-7 pr-4 text-[11px] font-semibold text-stone-800"
             value={currentSize || "16px"}
             disabled={disabled}
             onMouseDown={rememberSelection}
