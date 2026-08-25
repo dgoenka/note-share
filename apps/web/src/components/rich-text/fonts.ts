@@ -16,12 +16,14 @@ export const NOTE_FONTS = [
 ] as const;
 
 export const NOTE_FONT_SIZES = [
-  { label: "S", value: "12px" },
-  { label: "M", value: "14px" },
-  { label: "Body", value: "16px" },
-  { label: "L", value: "18px" },
-  { label: "XL", value: "24px" },
-  { label: "XXL", value: "32px" },
+  { label: "12px", value: "12px" },
+  { label: "14px", value: "14px" },
+  { label: "16px", value: "16px" },
+  { label: "18px", value: "18px" },
+  { label: "20px", value: "20px" },
+  { label: "24px", value: "24px" },
+  { label: "28px", value: "28px" },
+  { label: "32px", value: "32px" },
 ] as const;
 
 /** Google Fonts CSS2 URL for the palette (excludes ones already in layout). */

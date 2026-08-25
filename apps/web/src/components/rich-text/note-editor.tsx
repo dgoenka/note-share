@@ -361,7 +361,7 @@ export function NoteEditor({
   const fontLabel =
     NOTE_FONTS.find((f) => f.value === currentFont)?.label ?? "Default";
   const sizeLabel =
-    NOTE_FONT_SIZES.find((s) => s.value === currentSize)?.label ?? "M";
+    NOTE_FONT_SIZES.find((s) => s.value === currentSize)?.label ?? "16px";
 
   return (
     <div className="rounded-xl border border-stone-200 bg-white/90 shadow-sm">
@@ -411,8 +411,8 @@ export function NoteEditor({
           <ALargeSmall className="pointer-events-none absolute left-1.5 h-3.5 w-3.5 text-stone-600" />
           <select
             aria-label="Font size"
-            className="h-8 w-[3.25rem] cursor-pointer appearance-none rounded-lg border-0 bg-transparent py-0 pl-7 pr-4 text-[11px] font-semibold text-stone-800"
-            value={currentSize}
+            className="h-8 w-[4.25rem] cursor-pointer appearance-none rounded-lg border-0 bg-transparent py-0 pl-7 pr-4 text-[11px] font-semibold text-stone-800"
+            value={currentSize || "16px"}
             disabled={disabled}
             onMouseDown={rememberSelection}
             onFocus={rememberSelection}
@@ -420,13 +420,11 @@ export function NoteEditor({
               const v = e.target.value;
               restoreSelection();
               withPreservedSelection(editor, () => {
-                if (!v) editor.chain().focus().unsetFontSize().run();
-                else editor.chain().focus().setFontSize(v).run();
+                editor.chain().focus().setFontSize(v).run();
               });
               onChange(editor.getHTML());
             }}
           >
-            <option value="">M</option>
             {NOTE_FONT_SIZES.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
