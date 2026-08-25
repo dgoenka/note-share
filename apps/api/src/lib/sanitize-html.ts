@@ -93,6 +93,7 @@ export function sanitizeNoteHtml(dirty: string): string {
       "*": {
         "font-family": [/.*/],
         "font-size": [/^\d+(?:\.\d+)?(?:px|rem|em)$/],
+        "text-align": [/^(left|center|right|justify)$/],
         color: [/^#(?:[0-9a-fA-F]{3}){1,2}$/, /^rgb\(/, /^rgba\(/],
         "background-color": [
           /^#(?:[0-9a-fA-F]{3}){1,2}$/,

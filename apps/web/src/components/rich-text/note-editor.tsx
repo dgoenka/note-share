@@ -8,10 +8,15 @@ import Image from "@tiptap/extension-image";
 import Youtube from "@tiptap/extension-youtube";
 import Placeholder from "@tiptap/extension-placeholder";
 import { TextStyleKit } from "@tiptap/extension-text-style";
+import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
 import Highlight from "@tiptap/extension-highlight";
 import {
   ALargeSmall,
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
   Bold,
   ChevronDown,
   Heading2,
@@ -141,6 +146,10 @@ export function NoteEditor({
       TextStyleKit.configure({
         backgroundColor: false,
         lineHeight: false,
+      }),
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+        alignments: ["left", "center", "right", "justify"],
       }),
       Underline,
       Highlight.configure({ multicolor: true }),
@@ -535,6 +544,36 @@ export function NoteEditor({
         >
           <Heading2 className="h-4 w-4" />
         </ToolbarButton>
+        <span className="mx-0.5 h-5 w-px bg-stone-200" />
+        <ToolbarButton
+          title="Align left"
+          active={editor.isActive({ textAlign: "left" })}
+          onClick={() => editor.chain().focus().setTextAlign("left").run()}
+        >
+          <AlignLeft className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton
+          title="Align center"
+          active={editor.isActive({ textAlign: "center" })}
+          onClick={() => editor.chain().focus().setTextAlign("center").run()}
+        >
+          <AlignCenter className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton
+          title="Align right"
+          active={editor.isActive({ textAlign: "right" })}
+          onClick={() => editor.chain().focus().setTextAlign("right").run()}
+        >
+          <AlignRight className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton
+          title="Justify"
+          active={editor.isActive({ textAlign: "justify" })}
+          onClick={() => editor.chain().focus().setTextAlign("justify").run()}
+        >
+          <AlignJustify className="h-4 w-4" />
+        </ToolbarButton>
+        <span className="mx-0.5 h-5 w-px bg-stone-200" />
         <ToolbarButton
           title="Bullet list"
           active={editor.isActive("bulletList")}
