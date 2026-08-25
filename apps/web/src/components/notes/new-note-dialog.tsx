@@ -22,14 +22,14 @@ export function NewNoteDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-4 sm:pt-16"
       role="dialog"
       aria-modal="true"
       aria-label="Create a note"
       onClick={onClose}
     >
       <div
-        className="relative flex h-[100dvh] max-h-[100dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-amber-900/15 bg-[#fffcf5] shadow-2xl sm:h-[70dvh] sm:max-h-[70dvh] sm:rounded-3xl"
+        className="relative flex h-[100dvh] max-h-[100dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-amber-900/15 bg-[#fffcf5] shadow-2xl sm:h-[calc((100dvh-4rem)*0.7)] sm:max-h-[calc((100dvh-4rem)*0.7)] sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-stone-200/80 px-4 py-3 sm:px-5 sm:py-4">
