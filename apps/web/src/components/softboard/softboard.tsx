@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ListOrdered, Plus } from "lucide-react";
-import type { BoardPin } from "@note-share/shared";
+import type { BoardPin, NoteDetail } from "@note-share/shared";
 import { api, ApiError } from "@/lib/api";
 import { Alert } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
@@ -18,6 +17,7 @@ import {
 } from "@/lib/softboard-positions";
 import { PostItListItem, PostItPin } from "@/components/softboard/post-it-pin";
 import { PostItDialog } from "@/components/softboard/post-it-dialog";
+import { NewNoteDialog } from "@/components/notes/new-note-dialog";
 
 function sortChronological(pins: BoardPin[]) {
   return [...pins].sort(
@@ -36,7 +36,6 @@ export function Softboard({
   token: string;
   tab: "mine" | "feed";
 }) {
-  const router = useRouter();
   const isMobile = useIsMobileBoard();
   const [pins, setPins] = useState<BoardPin[]>([]);
   const [positions, setPositions] = useState<Record<string, PinPosition>>({});
@@ -45,6 +44,7 @@ export function Softboard({
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [active, setActive] = useState<BoardPin | null>(null);
+  const [composeOpen, setComposeOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
 
@@ -269,7 +269,7 @@ export function Softboard({
             className="pointer-events-auto inline-flex h-11 items-center gap-2 rounded-full bg-[var(--primary)] px-3.5 text-sm font-semibold text-[#faf6ef] shadow-xl shadow-stone-900/25 transition hover:bg-[#4a3125] active:scale-95"
             aria-label="New note"
             title="New note"
-            onClick={() => router.push("/notes/new")}
+            onClick={() => setComposeOpen(true)}
           >
             <Plus className="h-4 w-4" />
             New note
@@ -283,6 +283,34 @@ export function Softboard({
           tab={tab}
           authToken={token}
           onClose={() => setActive(null)}
+        />
+      )}
+
+      {composeOpen && (
+        <NewNoteDialog
+          onClose={() => setComposeOpen(false)}
+          onCreated={(note: NoteDetail) => {
+            const pin: BoardPin = {
+              id: note.id,
+              title: note.title,
+              shareToken: note.shareToken,
+              shareType: note.shareType,
+              accessType: note.accessType,
+              ownerName: "you",
+              isOwner: true,
+              viewCount: note.viewCount,
+              expiresAt: note.expiresAt,
+              revokedAt: note.revokedAt,
+              usedAt: note.usedAt,
+              isExpired: note.isExpired,
+              isRevoked: note.isRevoked,
+              isUsed: note.isUsed,
+              isAccessible: note.isAccessible,
+              createdAt: note.createdAt,
+            };
+            setPins((prev) => [pin, ...prev.filter((p) => p.id !== pin.id)]);
+            void fetchPage(null, false);
+          }}
         />
       )}
     </div>
