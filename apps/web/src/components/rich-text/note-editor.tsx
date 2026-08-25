@@ -26,6 +26,7 @@ import {
   Link2,
   List,
   ListOrdered,
+  MoreHorizontal,
   Palette,
   Strikethrough,
   Type,
@@ -71,7 +72,7 @@ function ToolbarButton({
       onMouseDown={keepSelection}
       onClick={onClick}
       className={cn(
-        "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-stone-700 transition hover:bg-stone-200/80 disabled:opacity-40",
+        "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-stone-700 transition hover:bg-stone-200/80 disabled:opacity-40 sm:h-8 sm:w-8",
         active && "bg-stone-200 text-stone-900"
       )}
     >
@@ -120,10 +121,10 @@ export function NoteEditor({
 }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [colorOpen, setColorOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
-  const colorMenuRef = useRef<HTMLDivElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
   const savedSelection = useRef<{ from: number; to: number } | null>(null);
 
   useEffect(() => {
@@ -263,15 +264,15 @@ export function NoteEditor({
   }, [editor, disabled]);
 
   useEffect(() => {
-    if (!colorOpen) return;
+    if (!moreOpen) return;
     function onDoc(e: MouseEvent) {
-      if (!colorMenuRef.current?.contains(e.target as Node)) {
-        setColorOpen(false);
+      if (!moreMenuRef.current?.contains(e.target as Node)) {
+        setMoreOpen(false);
       }
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
-  }, [colorOpen]);
+  }, [moreOpen]);
 
   const rememberSelection = useCallback(() => {
     if (!editor) return;
@@ -367,10 +368,6 @@ export function NoteEditor({
   const currentFont = styleAttrs.fontFamily || "";
   const currentSize = styleAttrs.fontSize || "";
   const currentColor = styleAttrs.color || "#1c1917";
-  const fontLabel =
-    NOTE_FONTS.find((f) => f.value === currentFont)?.label ?? "Default";
-  const sizeLabel =
-    NOTE_FONT_SIZES.find((s) => s.value === currentSize)?.label ?? "16px";
 
   const blockStyle = editor.isActive("heading", { level: 1 })
     ? "h1"
@@ -382,17 +379,16 @@ export function NoteEditor({
 
   return (
     <div className="rounded-xl border border-stone-200 bg-white/90 shadow-sm">
-      {/* Single compact Material-style toolbar */}
+      {/* Primary bar — essentials always visible; rest in overflow */}
       <div className="flex flex-wrap items-center gap-0.5 border-b border-stone-100 bg-stone-50/80 px-1 py-1">
-        {/* Block style — Paragraph / H1 / H2 / H3 */}
         <div
-          className="relative inline-flex h-8 items-center rounded-lg hover:bg-stone-200/70"
+          className="relative inline-flex h-9 items-center rounded-lg hover:bg-stone-200/70 sm:h-8"
           title="Paragraph style"
         >
           <Heading className="pointer-events-none absolute left-1.5 h-3.5 w-3.5 text-stone-600" />
           <select
             aria-label="Paragraph style"
-            className="h-8 w-[4.75rem] cursor-pointer appearance-none truncate rounded-lg border-0 bg-transparent py-0 pl-7 pr-5 text-[11px] font-semibold text-stone-800"
+            className="h-9 w-[4.5rem] cursor-pointer appearance-none truncate rounded-lg border-0 bg-transparent py-0 pl-7 pr-5 text-[11px] font-semibold text-stone-800 sm:h-8"
             value={blockStyle}
             disabled={disabled}
             onMouseDown={rememberSelection}
@@ -405,7 +401,7 @@ export function NoteEditor({
                   editor.chain().focus().setParagraph().run();
                 } else {
                   const level = Number(v.replace("h", "")) as 1 | 2 | 3;
-                  editor.chain().focus().toggleHeading({ level }).run();
+                  editor.chain().focus().setHeading({ level }).run();
                 }
               });
               onChange(editor.getHTML());
@@ -418,128 +414,6 @@ export function NoteEditor({
           </select>
           <ChevronDown className="pointer-events-none absolute right-1 h-3 w-3 text-stone-400" />
         </div>
-
-        {/* Font — icon + narrow select (no "Font:" label) */}
-        <div
-          className="relative inline-flex h-8 items-center rounded-lg hover:bg-stone-200/70"
-          title={`Font: ${fontLabel}`}
-        >
-          <Type className="pointer-events-none absolute left-1.5 h-3.5 w-3.5 text-stone-600" />
-          <select
-            aria-label="Font family"
-            className="h-8 w-[6.75rem] cursor-pointer appearance-none truncate rounded-lg border-0 bg-transparent py-0 pl-7 pr-5 text-[11px] font-semibold text-stone-800"
-            value={currentFont}
-            disabled={disabled}
-            onMouseDown={rememberSelection}
-            onFocus={rememberSelection}
-            onChange={(e) => {
-              const v = e.target.value;
-              restoreSelection();
-              withPreservedSelection(editor, () => {
-                if (!v) editor.chain().focus().unsetFontFamily().run();
-                else editor.chain().focus().setFontFamily(v).run();
-              });
-              onChange(editor.getHTML());
-            }}
-          >
-            {NOTE_FONTS.map((f) => (
-              <option
-                key={f.label}
-                value={f.value}
-                style={{ fontFamily: f.value || undefined }}
-              >
-                {f.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-1 h-3 w-3 text-stone-400" />
-        </div>
-
-        {/* Size — A↕ icon + tiny select */}
-        <div
-          className="relative inline-flex h-8 items-center rounded-lg hover:bg-stone-200/70"
-          title={`Size: ${sizeLabel}`}
-        >
-          <ALargeSmall className="pointer-events-none absolute left-1.5 h-3.5 w-3.5 text-stone-600" />
-          <select
-            aria-label="Font size"
-            className="h-8 w-[calc(4.25rem+10px)] cursor-pointer appearance-none rounded-lg border-0 bg-transparent py-0 pl-7 pr-4 text-[11px] font-semibold text-stone-800"
-            value={currentSize || "16px"}
-            disabled={disabled}
-            onMouseDown={rememberSelection}
-            onFocus={rememberSelection}
-            onChange={(e) => {
-              const v = e.target.value;
-              restoreSelection();
-              withPreservedSelection(editor, () => {
-                editor.chain().focus().setFontSize(v).run();
-              });
-              onChange(editor.getHTML());
-            }}
-          >
-            {NOTE_FONT_SIZES.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-0.5 h-3 w-3 text-stone-400" />
-        </div>
-
-        {/* Color — palette trigger + tiny popover (not a row of big swatches) */}
-        <div className="relative" ref={colorMenuRef}>
-          <button
-            type="button"
-            title="Text color"
-            disabled={disabled}
-            aria-expanded={colorOpen}
-            aria-label="Text color"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-stone-700 hover:bg-stone-200/70 disabled:opacity-40"
-            onMouseDown={(e) => {
-              keepSelection(e);
-              rememberSelection();
-            }}
-            onClick={() => setColorOpen((v) => !v)}
-          >
-            <span className="relative inline-flex flex-col items-center">
-              <Palette className="h-3.5 w-3.5" />
-              <span
-                className="mt-0.5 h-0.5 w-3.5 rounded-full"
-                style={{ backgroundColor: currentColor }}
-              />
-            </span>
-          </button>
-          {colorOpen && (
-            <div className="absolute left-0 top-full z-20 mt-1 flex gap-1 rounded-lg border border-stone-200 bg-white p-1.5 shadow-lg">
-              {TEXT_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  title={c}
-                  className={cn(
-                    "h-3.5 w-3.5 rounded-full ring-1 ring-stone-300",
-                    currentColor === c && "ring-2 ring-stone-700 ring-offset-1"
-                  )}
-                  style={{ backgroundColor: c }}
-                  onMouseDown={(e) => {
-                    keepSelection(e);
-                    rememberSelection();
-                  }}
-                  onClick={() => {
-                    restoreSelection();
-                    withPreservedSelection(editor, () => {
-                      editor.chain().focus().setColor(c).run();
-                    });
-                    onChange(editor.getHTML());
-                    setColorOpen(false);
-                  }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        <span className="mx-0.5 h-5 w-px bg-stone-200" />
 
         <ToolbarButton
           title="Bold"
@@ -555,59 +429,6 @@ export function NoteEditor({
         >
           <Italic className="h-4 w-4" />
         </ToolbarButton>
-        <ToolbarButton
-          title="Underline"
-          active={editor.isActive("underline")}
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-        >
-          <UnderlineIcon className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Strike"
-          active={editor.isActive("strike")}
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-        >
-          <Strikethrough className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Highlight"
-          active={editor.isActive("highlight")}
-          onClick={() =>
-            editor.chain().focus().toggleHighlight({ color: "#fef08a" }).run()
-          }
-        >
-          <Highlighter className="h-4 w-4" />
-        </ToolbarButton>
-        <span className="mx-0.5 h-5 w-px bg-stone-200" />
-        <ToolbarButton
-          title="Align left"
-          active={editor.isActive({ textAlign: "left" })}
-          onClick={() => editor.chain().focus().setTextAlign("left").run()}
-        >
-          <AlignLeft className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Align center"
-          active={editor.isActive({ textAlign: "center" })}
-          onClick={() => editor.chain().focus().setTextAlign("center").run()}
-        >
-          <AlignCenter className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Align right"
-          active={editor.isActive({ textAlign: "right" })}
-          onClick={() => editor.chain().focus().setTextAlign("right").run()}
-        >
-          <AlignRight className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Justify"
-          active={editor.isActive({ textAlign: "justify" })}
-          onClick={() => editor.chain().focus().setTextAlign("justify").run()}
-        >
-          <AlignJustify className="h-4 w-4" />
-        </ToolbarButton>
-        <span className="mx-0.5 h-5 w-px bg-stone-200" />
         <ToolbarButton
           title="Bullet list"
           active={editor.isActive("bulletList")}
@@ -626,7 +447,9 @@ export function NoteEditor({
           title="Link"
           active={editor.isActive("link")}
           onClick={() => {
-            const prev = editor.getAttributes("link").href as string | undefined;
+            const prev = editor.getAttributes("link").href as
+              | string
+              | undefined;
             const url = window.prompt("Link URL", prev || "https://");
             if (url === null) return;
             if (!url) {
@@ -643,7 +466,6 @@ export function NoteEditor({
         >
           <Link2 className="h-4 w-4" />
         </ToolbarButton>
-        <span className="mx-1 h-5 w-px bg-stone-200" />
         <ToolbarButton
           title="Upload image"
           disabled={uploading || disabled}
@@ -651,13 +473,197 @@ export function NoteEditor({
         >
           <ImageIcon className="h-4 w-4" />
         </ToolbarButton>
-        <ToolbarButton
-          title="Upload video (≤3 MB)"
-          disabled={uploading || disabled}
-          onClick={() => videoRef.current?.click()}
-        >
-          <Video className="h-4 w-4" />
-        </ToolbarButton>
+
+        {/* Overflow — font/size/color/align/etc */}
+        <div className="relative ml-auto" ref={moreMenuRef}>
+          <ToolbarButton
+            title="More formatting"
+            active={moreOpen}
+            disabled={disabled}
+            onClick={() => {
+              rememberSelection();
+              setMoreOpen((v) => !v);
+            }}
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </ToolbarButton>
+          {moreOpen && (
+            <div className="absolute right-0 top-full z-30 mt-1 w-[min(18rem,calc(100vw-1.5rem))] rounded-xl border border-stone-200 bg-white p-2 shadow-xl">
+              <div className="mb-2 grid grid-cols-2 gap-1.5">
+                <label className="flex flex-col gap-0.5">
+                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-stone-500">
+                    <Type className="h-3 w-3" /> Font
+                  </span>
+                  <select
+                    aria-label="Font family"
+                    className="h-9 rounded-lg border border-stone-200 bg-stone-50 px-2 text-xs font-semibold text-stone-800"
+                    value={currentFont}
+                    onMouseDown={rememberSelection}
+                    onFocus={rememberSelection}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      restoreSelection();
+                      withPreservedSelection(editor, () => {
+                        if (!v) editor.chain().focus().unsetFontFamily().run();
+                        else editor.chain().focus().setFontFamily(v).run();
+                      });
+                      onChange(editor.getHTML());
+                    }}
+                  >
+                    {NOTE_FONTS.map((f) => (
+                      <option
+                        key={f.label}
+                        value={f.value}
+                        style={{ fontFamily: f.value || undefined }}
+                      >
+                        {f.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-0.5">
+                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-stone-500">
+                    <ALargeSmall className="h-3 w-3" /> Size
+                  </span>
+                  <select
+                    aria-label="Font size"
+                    className="h-9 rounded-lg border border-stone-200 bg-stone-50 px-2 text-xs font-semibold text-stone-800"
+                    value={currentSize || "16px"}
+                    onMouseDown={rememberSelection}
+                    onFocus={rememberSelection}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      restoreSelection();
+                      withPreservedSelection(editor, () => {
+                        editor.chain().focus().setFontSize(v).run();
+                      });
+                      onChange(editor.getHTML());
+                    }}
+                  >
+                    {NOTE_FONT_SIZES.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="mb-2">
+                <span className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-stone-500">
+                  <Palette className="h-3 w-3" /> Color
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {TEXT_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      title={c}
+                      className={cn(
+                        "h-6 w-6 rounded-full ring-1 ring-stone-300",
+                        currentColor === c &&
+                          "ring-2 ring-stone-700 ring-offset-1"
+                      )}
+                      style={{ backgroundColor: c }}
+                      onMouseDown={(e) => {
+                        keepSelection(e);
+                        rememberSelection();
+                      }}
+                      onClick={() => {
+                        restoreSelection();
+                        withPreservedSelection(editor, () => {
+                          editor.chain().focus().setColor(c).run();
+                        });
+                        onChange(editor.getHTML());
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-1 flex flex-wrap gap-0.5">
+                <ToolbarButton
+                  title="Underline"
+                  active={editor.isActive("underline")}
+                  onClick={() =>
+                    editor.chain().focus().toggleUnderline().run()
+                  }
+                >
+                  <UnderlineIcon className="h-4 w-4" />
+                </ToolbarButton>
+                <ToolbarButton
+                  title="Strike"
+                  active={editor.isActive("strike")}
+                  onClick={() => editor.chain().focus().toggleStrike().run()}
+                >
+                  <Strikethrough className="h-4 w-4" />
+                </ToolbarButton>
+                <ToolbarButton
+                  title="Highlight"
+                  active={editor.isActive("highlight")}
+                  onClick={() =>
+                    editor
+                      .chain()
+                      .focus()
+                      .toggleHighlight({ color: "#fef08a" })
+                      .run()
+                  }
+                >
+                  <Highlighter className="h-4 w-4" />
+                </ToolbarButton>
+                <span className="mx-0.5 h-5 w-px self-center bg-stone-200" />
+                <ToolbarButton
+                  title="Align left"
+                  active={editor.isActive({ textAlign: "left" })}
+                  onClick={() =>
+                    editor.chain().focus().setTextAlign("left").run()
+                  }
+                >
+                  <AlignLeft className="h-4 w-4" />
+                </ToolbarButton>
+                <ToolbarButton
+                  title="Align center"
+                  active={editor.isActive({ textAlign: "center" })}
+                  onClick={() =>
+                    editor.chain().focus().setTextAlign("center").run()
+                  }
+                >
+                  <AlignCenter className="h-4 w-4" />
+                </ToolbarButton>
+                <ToolbarButton
+                  title="Align right"
+                  active={editor.isActive({ textAlign: "right" })}
+                  onClick={() =>
+                    editor.chain().focus().setTextAlign("right").run()
+                  }
+                >
+                  <AlignRight className="h-4 w-4" />
+                </ToolbarButton>
+                <ToolbarButton
+                  title="Justify"
+                  active={editor.isActive({ textAlign: "justify" })}
+                  onClick={() =>
+                    editor.chain().focus().setTextAlign("justify").run()
+                  }
+                >
+                  <AlignJustify className="h-4 w-4" />
+                </ToolbarButton>
+              </div>
+
+              <ToolbarButton
+                title="Upload video (≤3 MB)"
+                disabled={uploading || disabled}
+                onClick={() => videoRef.current?.click()}
+              >
+                <Video className="h-4 w-4" />
+              </ToolbarButton>
+              <span className="ml-1 align-middle text-[11px] text-stone-500">
+                Video
+              </span>
+            </div>
+          )}
+        </div>
+
         <input
           ref={fileRef}
           type="file"
@@ -681,7 +687,7 @@ export function NoteEditor({
           }}
         />
         {uploading && (
-          <span className="ml-2 text-xs font-semibold text-stone-500">
+          <span className="ml-1 text-xs font-semibold text-stone-500">
             Working…
           </span>
         )}
@@ -694,8 +700,8 @@ export function NoteEditor({
         </p>
       )}
       <p className="border-t border-stone-100 px-3 py-1.5 text-[11px] text-stone-500">
-        Select text, then use Type / size / palette. Paste product links for a
-        snapshot card.
+        Essentials on the bar · font, size, color, align in ⋯ · paste links for
+        snapshot cards.
       </p>
     </div>
   );
