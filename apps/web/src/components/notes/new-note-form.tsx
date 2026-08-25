@@ -38,6 +38,7 @@ export function NewNoteForm({
   onCreated,
   compact,
   stayOnSuccess,
+  stickyActions,
 }: {
   onCancel: () => void;
   /** Called when create finishes (page) or user taps Done after success (dialog). */
@@ -46,6 +47,8 @@ export function NewNoteForm({
   compact?: boolean;
   /** Dialog: show share link/key in-place instead of navigating away */
   stayOnSuccess?: boolean;
+  /** Pin submit/cancel (or Done) to the bottom of the dialog */
+  stickyActions?: boolean;
 }) {
   const { token } = useAuth();
   const [title, setTitle] = useState("");
@@ -175,8 +178,42 @@ export function NewNoteForm({
     }
   }
 
+  const actions = (
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+      {created ? (
+        <Button
+          type="button"
+          className="w-full sm:w-auto"
+          onClick={() => onCreated?.(created)}
+        >
+          Done — back to board
+        </Button>
+      ) : (
+        <>
+          <Button
+            type="submit"
+            form="new-note-form"
+            className="w-full sm:w-auto"
+            loading={submitting}
+          >
+            {submitting ? "Minting link…" : "Create & generate share link"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto"
+            disabled={submitting}
+            onClick={onCancel}
+          >
+            Cancel
+          </Button>
+        </>
+      )}
+    </div>
+  );
+
   if (created) {
-    return (
+    const successBody = (
       <div className="space-y-4">
         <Alert>
           Note pinned. Copy the share link
@@ -226,24 +263,51 @@ export function NewNoteForm({
             </Button>
           </div>
         )}
-        <Button
-          type="button"
-          className="w-full sm:w-auto"
-          onClick={() => onCreated?.(created)}
-        >
-          Done — back to board
-        </Button>
+        {!stickyActions && actions}
       </div>
     );
+
+    if (stickyActions) {
+      return (
+        <div className="flex h-full min-h-0 flex-col">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
+            {successBody}
+          </div>
+          <div className="shrink-0 border-t border-stone-200/80 bg-[#fffcf5]/95 px-4 py-3 backdrop-blur-sm sm:px-5">
+            {actions}
+          </div>
+        </div>
+      );
+    }
+
+    return successBody;
   }
 
   return (
-    <LoadingOverlay active={submitting} label="Minting share link…">
+    <LoadingOverlay
+      active={submitting}
+      label="Minting share link…"
+      fill={stickyActions}
+    >
       <form
+        id="new-note-form"
         onSubmit={onSubmit}
-        className={compact ? "space-y-4" : "space-y-5"}
+        className={
+          stickyActions
+            ? "flex h-full min-h-0 flex-col"
+            : compact
+              ? "space-y-4"
+              : "space-y-5"
+        }
         aria-busy={submitting}
       >
+        <div
+          className={
+            stickyActions
+              ? "min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5"
+              : undefined
+          }
+        >
         {error && <Alert variant="destructive">{error}</Alert>}
 
         <fieldset disabled={submitting} className="space-y-4 border-0 p-0 sm:space-y-5">
@@ -432,25 +496,14 @@ export function NewNoteForm({
             </div>
           )}
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <Button
-              type="submit"
-              className="w-full sm:w-auto"
-              loading={submitting}
-            >
-              {submitting ? "Minting link…" : "Create & generate share link"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full sm:w-auto"
-              disabled={submitting}
-              onClick={onCancel}
-            >
-              Cancel
-            </Button>
-          </div>
+          {!stickyActions && actions}
         </fieldset>
+        </div>
+        {stickyActions && (
+          <div className="shrink-0 border-t border-stone-200/80 bg-[#fffcf5]/95 px-4 py-3 backdrop-blur-sm sm:px-5">
+            {actions}
+          </div>
+        )}
       </form>
     </LoadingOverlay>
   );

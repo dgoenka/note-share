@@ -37,19 +37,23 @@ export function LoadingOverlay({
   label = "Working…",
   children,
   className,
+  fill,
 }: {
   active: boolean;
   label?: string;
   children: React.ReactNode;
   className?: string;
+  /** Stretch to parent height (dialog layouts with sticky footers) */
+  fill?: boolean;
 }) {
   return (
     <div
-      className={cn("relative", className)}
+      className={cn("relative", fill && "flex h-full min-h-0 flex-col", className)}
       aria-busy={active || undefined}
     >
       <div
         className={cn(
+          fill && "flex h-full min-h-0 flex-col",
           active && "pointer-events-none select-none opacity-55"
         )}
       >

@@ -29,7 +29,7 @@ export function NewNoteDialog({
       onClick={onClose}
     >
       <div
-        className="relative flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-amber-900/15 bg-[#fffcf5] shadow-2xl sm:rounded-3xl"
+        className="relative flex h-[100dvh] max-h-[100dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-amber-900/15 bg-[#fffcf5] shadow-2xl sm:h-[70dvh] sm:max-h-[70dvh] sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-stone-200/80 px-4 py-3 sm:px-5 sm:py-4">
@@ -48,10 +48,11 @@ export function NewNoteDialog({
             Close
           </Button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
+        <div className="flex min-h-0 flex-1 flex-col">
           <NewNoteForm
             compact
             stayOnSuccess
+            stickyActions
             onCancel={onClose}
             onCreated={(note) => {
               onCreated(note);
