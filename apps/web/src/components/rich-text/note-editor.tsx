@@ -19,7 +19,7 @@ import {
   AlignRight,
   Bold,
   ChevronDown,
-  Heading2,
+  Heading,
   Highlighter,
   ImageIcon,
   Italic,
@@ -372,10 +372,53 @@ export function NoteEditor({
   const sizeLabel =
     NOTE_FONT_SIZES.find((s) => s.value === currentSize)?.label ?? "16px";
 
+  const blockStyle = editor.isActive("heading", { level: 1 })
+    ? "h1"
+    : editor.isActive("heading", { level: 2 })
+      ? "h2"
+      : editor.isActive("heading", { level: 3 })
+        ? "h3"
+        : "p";
+
   return (
     <div className="rounded-xl border border-stone-200 bg-white/90 shadow-sm">
       {/* Single compact Material-style toolbar */}
       <div className="flex flex-wrap items-center gap-0.5 border-b border-stone-100 bg-stone-50/80 px-1 py-1">
+        {/* Block style — Paragraph / H1 / H2 / H3 */}
+        <div
+          className="relative inline-flex h-8 items-center rounded-lg hover:bg-stone-200/70"
+          title="Paragraph style"
+        >
+          <Heading className="pointer-events-none absolute left-1.5 h-3.5 w-3.5 text-stone-600" />
+          <select
+            aria-label="Paragraph style"
+            className="h-8 w-[4.75rem] cursor-pointer appearance-none truncate rounded-lg border-0 bg-transparent py-0 pl-7 pr-5 text-[11px] font-semibold text-stone-800"
+            value={blockStyle}
+            disabled={disabled}
+            onMouseDown={rememberSelection}
+            onFocus={rememberSelection}
+            onChange={(e) => {
+              const v = e.target.value;
+              restoreSelection();
+              withPreservedSelection(editor, () => {
+                if (v === "p") {
+                  editor.chain().focus().setParagraph().run();
+                } else {
+                  const level = Number(v.replace("h", "")) as 1 | 2 | 3;
+                  editor.chain().focus().toggleHeading({ level }).run();
+                }
+              });
+              onChange(editor.getHTML());
+            }}
+          >
+            <option value="p">Text</option>
+            <option value="h1">H1</option>
+            <option value="h2">H2</option>
+            <option value="h3">H3</option>
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-1 h-3 w-3 text-stone-400" />
+        </div>
+
         {/* Font — icon + narrow select (no "Font:" label) */}
         <div
           className="relative inline-flex h-8 items-center rounded-lg hover:bg-stone-200/70"
@@ -534,15 +577,6 @@ export function NoteEditor({
           }
         >
           <Highlighter className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Heading"
-          active={editor.isActive("heading", { level: 2 })}
-          onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 2 }).run()
-          }
-        >
-          <Heading2 className="h-4 w-4" />
         </ToolbarButton>
         <span className="mx-0.5 h-5 w-px bg-stone-200" />
         <ToolbarButton
