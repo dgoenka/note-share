@@ -71,6 +71,8 @@ export const LinkPreview = Node.create({
           src: image,
           alt: title,
           class: "link-preview-image",
+          loading: "lazy",
+          referrerpolicy: "no-referrer",
         },
       ]);
     }

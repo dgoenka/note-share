@@ -19,6 +19,7 @@ import {
   AlignRight,
   Bold,
   ChevronDown,
+  Globe,
   Heading,
   Highlighter,
   ImageIcon,
@@ -213,22 +214,34 @@ export function NoteEditor({
           return true;
         }
         if (isHttpUrl(text) && !/\s/.test(text)) {
+          const { from, to } = editor.state.selection;
+          if (from !== to) {
+            event.preventDefault();
+            editor.chain().focus().setLink({ href: text }).run();
+            onChange(editor.getHTML());
+            return true;
+          }
           event.preventDefault();
           void (async () => {
             try {
               setUploadError(null);
               setUploading(true);
               const preview = await api.unfurlLink(token, text);
-              editor.commands.insertContent({
-                type: "linkPreview",
-                attrs: {
-                  url: preview.url,
-                  title: preview.title,
-                  description: preview.description,
-                  image: preview.image,
-                  siteName: preview.siteName,
-                },
-              });
+              editor
+                .chain()
+                .focus()
+                .insertContent({
+                  type: "linkPreview",
+                  attrs: {
+                    url: preview.url,
+                    title: preview.title || preview.url,
+                    description: preview.description || "",
+                    image: preview.image || "",
+                    siteName: preview.siteName || "",
+                  },
+                })
+                .createParagraphNear()
+                .run();
               onChange(editor.getHTML());
             } catch (err) {
               editor
@@ -352,6 +365,45 @@ export function NoteEditor({
     [editor, token, onChange]
   );
 
+  const insertLinkPreview = useCallback(
+    async (rawUrl: string) => {
+      if (!editor || !token) return;
+      const clean = rawUrl.trim();
+      if (!clean) return;
+      const targetUrl = /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
+      setUploadError(null);
+      setUploading(true);
+      try {
+        const preview = await api.unfurlLink(token, targetUrl);
+        editor
+          .chain()
+          .focus()
+          .insertContent({
+            type: "linkPreview",
+            attrs: {
+              url: preview.url,
+              title: preview.title || preview.url,
+              description: preview.description || "",
+              image: preview.image || "",
+              siteName: preview.siteName || "",
+            },
+          })
+          .createParagraphNear()
+          .run();
+        onChange(editor.getHTML());
+      } catch (err) {
+        setUploadError(
+          err instanceof ApiError
+            ? `Preview unavailable (${err.message})`
+            : "Preview unavailable"
+        );
+      } finally {
+        setUploading(false);
+      }
+    },
+    [editor, token, onChange]
+  );
+
   if (!editor) {
     return (
       <div className="rounded-xl border border-stone-200 bg-white/80 px-3 py-8 text-center text-sm text-stone-500">
@@ -465,6 +517,18 @@ export function NoteEditor({
           }}
         >
           <Link2 className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton
+          title="Insert link preview card"
+          disabled={uploading || disabled}
+          onClick={() => {
+            const url = window.prompt("Enter URL for link preview card:", "https://");
+            if (url?.trim() && url.trim() !== "https://") {
+              void insertLinkPreview(url.trim());
+            }
+          }}
+        >
+          <Globe className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton
           title="Upload image"

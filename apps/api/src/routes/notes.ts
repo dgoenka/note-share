@@ -95,7 +95,12 @@ notesRoutes.post("/", zValidator("json", createNoteSchema), async (c) => {
   const content = sanitizeNoteHtml(body.content);
   const textOnly = content.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
   const { extractMediaIds } = await import("../lib/sanitize-html.js");
-  if (!textOnly && extractMediaIds(content).length === 0) {
+  const hasEmbeds =
+    content.includes("data-link-preview") ||
+    content.includes("data-youtube-video") ||
+    content.includes("data-vimeo-video") ||
+    content.includes("<iframe");
+  if (!textOnly && extractMediaIds(content).length === 0 && !hasEmbeds) {
     throw new HTTPException(400, { message: "Content is required" });
   }
 

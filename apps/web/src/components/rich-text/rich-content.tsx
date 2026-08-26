@@ -67,6 +67,8 @@ export function RichContent({
         "data-image",
         "data-site",
         "controls",
+        "loading",
+        "referrerpolicy",
       ],
     });
   }, [html, mediaUrls]);
@@ -75,10 +77,10 @@ export function RichContent({
     <div
       className={cn(
         "rich-content max-w-none text-sm leading-relaxed text-stone-800",
-        "[&_img]:my-3 [&_img]:max-h-96 [&_img]:rounded-lg [&_img]:border [&_img]:border-stone-200",
+        "[&_img:not(.link-preview-image)]:my-3 [&_img:not(.link-preview-image)]:max-h-96 [&_img:not(.link-preview-image)]:rounded-lg [&_img:not(.link-preview-image)]:border [&_img:not(.link-preview-image)]:border-stone-200",
         "[&_video]:my-3 [&_video]:max-h-96 [&_video]:w-full [&_video]:rounded-lg",
         "[&_iframe]:my-3 [&_iframe]:aspect-video [&_iframe]:w-full [&_iframe]:max-w-full [&_iframe]:rounded-lg",
-        "[&_a]:text-[var(--accent)] [&_a]:underline",
+        "[&_a:not(.link-preview-card)]:text-[var(--accent)] [&_a:not(.link-preview-card)]:underline",
         "[&_.link-preview]:my-3",
         className
       )}

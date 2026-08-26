@@ -84,6 +84,16 @@ export async function unfurlLink(rawUrl: string): Promise<LinkUnfurl> {
     throw new HTTPException(400, { message: "That host cannot be previewed" });
   }
 
+  const fallbackCard: LinkUnfurl = {
+    url: url.toString(),
+    title:
+      url.hostname.replace(/^www\./, "") +
+      (url.pathname && url.pathname !== "/" ? url.pathname : ""),
+    description: "",
+    image: "",
+    siteName: url.hostname.replace(/^www\./, ""),
+  };
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   let res: Response;
@@ -93,61 +103,71 @@ export async function unfurlLink(rawUrl: string): Promise<LinkUnfurl> {
       redirect: "follow",
       headers: {
         "User-Agent":
-          "NoteShareLinkPreview/1.0 (+https://note-share-ruby.vercel.app)",
-        Accept: "text/html,application/xhtml+xml",
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
       },
     });
   } catch {
-    throw new HTTPException(502, { message: "Could not fetch that link" });
+    setCachedUnfurl(normalized, fallbackCard);
+    return fallbackCard;
   } finally {
     clearTimeout(timer);
   }
 
   if (!res.ok) {
-    throw new HTTPException(502, {
-      message: `Preview fetch failed (${res.status})`,
-    });
+    setCachedUnfurl(normalized, fallbackCard);
+    return fallbackCard;
   }
 
   const ctype = (res.headers.get("content-type") || "").toLowerCase();
   if (!ctype.includes("text/html") && !ctype.includes("application/xhtml")) {
-    // Fallback card for non-HTML (PDFs, etc.)
-    return {
-      url: url.toString(),
-      title: url.hostname + url.pathname,
-      description: "",
-      image: "",
-      siteName: url.hostname.replace(/^www\./, ""),
-    };
+    setCachedUnfurl(normalized, fallbackCard);
+    return fallbackCard;
   }
 
-  const buf = Buffer.from(await res.arrayBuffer());
+  let buf: Buffer;
+  try {
+    buf = Buffer.from(await res.arrayBuffer());
+  } catch {
+    setCachedUnfurl(normalized, fallbackCard);
+    return fallbackCard;
+  }
+
   if (buf.byteLength > MAX_BYTES) {
-    throw new HTTPException(413, { message: "Page too large to preview" });
+    buf = buf.subarray(0, MAX_BYTES);
   }
 
-  const $ = cheerio.load(buf.toString("utf8"));
-  const title =
-    meta($, "og:title", "twitter:title") ||
-    $("title").first().text().trim() ||
-    url.hostname;
-  const description =
-    meta($, "og:description", "twitter:description", "description") || "";
-  const image = absUrl(
-    url.toString(),
-    meta($, "og:image", "twitter:image", "twitter:image:src")
-  );
-  const siteName =
-    meta($, "og:site_name") || url.hostname.replace(/^www\./, "");
+  try {
+    const $ = cheerio.load(buf.toString("utf8"));
+    const title =
+      meta($, "og:title", "twitter:title") ||
+      $("title").first().text().trim() ||
+      fallbackCard.title;
+    const description =
+      meta($, "og:description", "twitter:description", "description") || "";
+    const rawImage =
+      meta($, "og:image", "twitter:image", "twitter:image:src") ||
+      $('link[rel="apple-touch-icon"]').attr("href") ||
+      $('link[rel="icon"]').attr("href");
+    const image = absUrl(url.toString(), rawImage);
+    const siteName =
+      meta($, "og:site_name") || url.hostname.replace(/^www\./, "");
 
-  const result: LinkUnfurl = {
-    url: url.toString(),
-    title: title.slice(0, 200),
-    description: description.slice(0, 400),
-    image: image.startsWith("https:") || image.startsWith("http:") ? image : "",
-    siteName: siteName.slice(0, 100),
-  };
+    const result: LinkUnfurl = {
+      url: url.toString(),
+      title: title.slice(0, 200) || fallbackCard.title,
+      description: description.slice(0, 400),
+      image:
+        image.startsWith("https:") || image.startsWith("http:") ? image : "",
+      siteName: siteName.slice(0, 100) || fallbackCard.siteName,
+    };
 
-  setCachedUnfurl(normalized, result);
-  return result;
+    setCachedUnfurl(normalized, result);
+    return result;
+  } catch {
+    setCachedUnfurl(normalized, fallbackCard);
+    return fallbackCard;
+  }
 }

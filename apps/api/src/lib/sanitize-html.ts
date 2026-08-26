@@ -50,7 +50,17 @@ export function sanitizeNoteHtml(dirty: string): string {
     ],
     allowedAttributes: {
       a: ["href", "target", "rel", "class"],
-      img: ["src", "alt", "title", "data-media-id", "width", "height", "class"],
+      img: [
+        "src",
+        "alt",
+        "title",
+        "data-media-id",
+        "width",
+        "height",
+        "class",
+        "loading",
+        "referrerpolicy",
+      ],
       video: [
         "src",
         "controls",
