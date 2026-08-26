@@ -90,7 +90,7 @@ export async function unfurlLink(rawUrl: string): Promise<LinkUnfurl> {
       url.hostname.replace(/^www\./, "") +
       (url.pathname && url.pathname !== "/" ? url.pathname : ""),
     description: "",
-    image: "",
+    image: `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=128`,
     siteName: url.hostname.replace(/^www\./, ""),
   };
 
@@ -147,11 +147,26 @@ export async function unfurlLink(rawUrl: string): Promise<LinkUnfurl> {
       fallbackCard.title;
     const description =
       meta($, "og:description", "twitter:description", "description") || "";
-    const rawImage =
-      meta($, "og:image", "twitter:image", "twitter:image:src") ||
-      $('link[rel="apple-touch-icon"]').attr("href") ||
-      $('link[rel="icon"]').attr("href");
-    const image = absUrl(url.toString(), rawImage);
+    const ogImage = meta(
+      $,
+      "og:image",
+      "og:image:url",
+      "og:image:secure_url",
+      "twitter:image",
+      "twitter:image:src"
+    );
+    const appleTouchIcon = $('link[rel="apple-touch-icon"]').attr("href");
+    const icon =
+      $('link[rel="icon"]').attr("href") ||
+      $('link[rel="shortcut icon"]').attr("href");
+
+    const rawImage = ogImage || appleTouchIcon || icon;
+    let image = absUrl(url.toString(), rawImage);
+
+    if (!image || image.toLowerCase().endsWith(".ico")) {
+      image = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=128`;
+    }
+
     const siteName =
       meta($, "og:site_name") || url.hostname.replace(/^www\./, "");
 
@@ -159,8 +174,7 @@ export async function unfurlLink(rawUrl: string): Promise<LinkUnfurl> {
       url: url.toString(),
       title: title.slice(0, 200) || fallbackCard.title,
       description: description.slice(0, 400),
-      image:
-        image.startsWith("https:") || image.startsWith("http:") ? image : "",
+      image,
       siteName: siteName.slice(0, 100) || fallbackCard.siteName,
     };
 

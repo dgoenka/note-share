@@ -49,46 +49,72 @@ export const LinkPreview = Node.create({
     const image = String(HTMLAttributes.image || "");
     const siteName = String(HTMLAttributes.siteName || "");
 
-    const children: ReturnType<typeof mergeAttributes> extends never
-      ? never
-      : unknown[] = [];
+    let domain = "";
+    try {
+      domain = new URL(url).hostname.replace(/^www\./, "");
+    } catch {
+      domain = siteName || "";
+    }
 
-    // TipTap renderHTML: nested array structure
-    const inner: (string | Record<string, string> | unknown[])[] = [
-      "a",
-      {
-        href: url,
-        target: "_blank",
-        rel: "noopener noreferrer",
-        class: "link-preview-card",
-      },
-    ];
+    const faviconUrl = domain
+      ? `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
+      : "";
 
-    if (image) {
-      inner.push([
+    const headerKids: unknown[] = [];
+    if (faviconUrl) {
+      headerKids.push([
         "img",
         {
-          src: image,
-          alt: title,
-          class: "link-preview-image",
+          src: faviconUrl,
+          alt: "",
+          class: "link-preview-favicon",
           loading: "lazy",
           referrerpolicy: "no-referrer",
         },
       ]);
     }
+    headerKids.push([
+      "span",
+      { class: "link-preview-site" },
+      siteName || domain,
+    ]);
+    if (domain && domain.toLowerCase() !== (siteName || "").toLowerCase()) {
+      headerKids.push([
+        "span",
+        { class: "link-preview-domain" },
+        domain,
+      ]);
+    }
 
     const metaKids: unknown[] = [
-      "div",
-      { class: "link-preview-meta" },
+      ["div", { class: "link-preview-header" }, ...headerKids],
       ["strong", { class: "link-preview-title" }, title],
     ];
+
     if (description) {
       metaKids.push(["p", { class: "link-preview-desc" }, description]);
     }
-    if (siteName) {
-      metaKids.push(["span", { class: "link-preview-site" }, siteName]);
+
+    const cardInner: unknown[] = [
+      ["div", { class: "link-preview-meta" }, ...metaKids],
+    ];
+
+    if (image && !image.includes("google.com/s2/favicons?domain=")) {
+      cardInner.push([
+        "div",
+        { class: "link-preview-image-wrap" },
+        [
+          "img",
+          {
+            src: image,
+            alt: title,
+            class: "link-preview-image",
+            loading: "lazy",
+            referrerpolicy: "no-referrer",
+          },
+        ],
+      ]);
     }
-    inner.push(metaKids);
 
     return [
       "div",
@@ -101,7 +127,16 @@ export const LinkPreview = Node.create({
         "data-site": siteName,
         class: "link-preview",
       }),
-      inner,
+      [
+        "a",
+        {
+          href: url,
+          target: "_blank",
+          rel: "noopener noreferrer",
+          class: "link-preview-card",
+        },
+        ...cardInner,
+      ],
     ];
   },
 });
