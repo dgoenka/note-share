@@ -18,6 +18,7 @@ import {
   AlignLeft,
   AlignRight,
   Bold,
+  Check,
   ChevronDown,
   Globe,
   Heading,
@@ -27,12 +28,12 @@ import {
   Link2,
   List,
   ListOrdered,
-  MoreHorizontal,
   Palette,
   Strikethrough,
   Type,
   Underline as UnderlineIcon,
   Video,
+  X,
 } from "lucide-react";
 import type { Editor } from "@tiptap/react";
 import { api, ApiError } from "@/lib/api";
@@ -47,7 +48,6 @@ import {
   NOTE_FONTS_STYLESHEET,
 } from "@/components/rich-text/fonts";
 
-/** Keep editor selection when interacting with toolbar controls. */
 function keepSelection(e: React.SyntheticEvent) {
   e.preventDefault();
 }
@@ -58,12 +58,14 @@ function ToolbarButton({
   onClick,
   children,
   title,
+  className,
 }: {
   active?: boolean;
   disabled?: boolean;
   onClick: () => void;
   children: React.ReactNode;
   title: string;
+  className?: string;
 }) {
   return (
     <button
@@ -73,8 +75,9 @@ function ToolbarButton({
       onMouseDown={keepSelection}
       onClick={onClick}
       className={cn(
-        "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-stone-700 transition hover:bg-stone-200/80 disabled:opacity-40 sm:h-8 sm:w-8",
-        active && "bg-stone-200 text-stone-900"
+        "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-stone-700 transition hover:bg-stone-200/80 active:bg-stone-200 disabled:opacity-40",
+        active && "bg-stone-200/90 text-stone-900 font-semibold",
+        className
       )}
     >
       {children}
@@ -122,10 +125,18 @@ export function NoteEditor({
 }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [moreOpen, setMoreOpen] = useState(false);
+
+  // Popover menus
+  const [blockMenuOpen, setBlockMenuOpen] = useState(false);
+  const [styleMenuOpen, setStyleMenuOpen] = useState(false);
+  const [linkBarOpen, setLinkBarOpen] = useState(false);
+  const [linkInputUrl, setLinkInputUrl] = useState("");
+
   const fileRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
-  const moreMenuRef = useRef<HTMLDivElement>(null);
+  const blockMenuRef = useRef<HTMLDivElement>(null);
+  const styleMenuRef = useRef<HTMLDivElement>(null);
+  const linkInputRef = useRef<HTMLInputElement>(null);
   const savedSelection = useRef<{ from: number; to: number } | null>(null);
 
   useEffect(() => {
@@ -144,7 +155,6 @@ export function NoteEditor({
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
       }),
-      // TipTap v3: one kit merges font-family / font-size / color into a single style attr
       TextStyleKit.configure({
         backgroundColor: false,
         lineHeight: false,
@@ -185,8 +195,7 @@ export function NoteEditor({
       UploadedVideo,
       LinkPreview,
       Placeholder.configure({
-        placeholder:
-          "Write your note… Select text, then pick a font/size. Paste links for preview cards.",
+        placeholder: "Write your note… Paste links for preview cards.",
       }),
     ],
     content: value || "",
@@ -194,7 +203,7 @@ export function NoteEditor({
     editorProps: {
       attributes: {
         class:
-          "note-editor-prose min-h-[12rem] max-h-[28rem] overflow-y-auto px-3 py-2 text-sm leading-relaxed focus:outline-none",
+          "note-editor-prose min-h-[12rem] max-h-[28rem] overflow-y-auto px-4 py-3 text-sm leading-relaxed focus:outline-none",
       },
       handlePaste(_view, event) {
         const text = event.clipboardData?.getData("text/plain")?.trim();
@@ -276,16 +285,25 @@ export function NoteEditor({
     editor.setEditable(!disabled);
   }, [editor, disabled]);
 
+  // Click outside listener for dropdowns
   useEffect(() => {
-    if (!moreOpen) return;
     function onDoc(e: MouseEvent) {
-      if (!moreMenuRef.current?.contains(e.target as Node)) {
-        setMoreOpen(false);
+      if (
+        blockMenuOpen &&
+        !blockMenuRef.current?.contains(e.target as Node)
+      ) {
+        setBlockMenuOpen(false);
+      }
+      if (
+        styleMenuOpen &&
+        !styleMenuRef.current?.contains(e.target as Node)
+      ) {
+        setStyleMenuOpen(false);
       }
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
-  }, [moreOpen]);
+  }, [blockMenuOpen, styleMenuOpen]);
 
   const rememberSelection = useCallback(() => {
     if (!editor) return;
@@ -404,6 +422,50 @@ export function NoteEditor({
     [editor, token, onChange]
   );
 
+  const openLinkBar = useCallback(() => {
+    if (!editor) return;
+    rememberSelection();
+    const existingHref = (editor.getAttributes("link").href as string) || "";
+    setLinkInputUrl(existingHref);
+    setLinkBarOpen(true);
+    setTimeout(() => linkInputRef.current?.focus(), 50);
+  }, [editor, rememberSelection]);
+
+  const applyInlineLink = useCallback(() => {
+    if (!editor) return;
+    const raw = linkInputUrl.trim();
+    if (!raw) {
+      editor.chain().focus().unsetLink().run();
+      setLinkBarOpen(false);
+      onChange(editor.getHTML());
+      return;
+    }
+    const targetUrl = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    const { from, to } = editor.state.selection;
+    if (from !== to) {
+      editor.chain().focus().extendMarkRange("link").setLink({ href: targetUrl }).run();
+    } else {
+      editor
+        .chain()
+        .focus()
+        .insertContent(
+          `<p><a href="${targetUrl}" target="_blank" rel="noopener noreferrer">${targetUrl}</a></p>`
+        )
+        .run();
+    }
+    setLinkBarOpen(false);
+    setLinkInputUrl("");
+    onChange(editor.getHTML());
+  }, [editor, linkInputUrl, onChange]);
+
+  const applyCardPreview = useCallback(() => {
+    const raw = linkInputUrl.trim();
+    if (!raw) return;
+    setLinkBarOpen(false);
+    setLinkInputUrl("");
+    void insertLinkPreview(raw);
+  }, [linkInputUrl, insertLinkPreview]);
+
   if (!editor) {
     return (
       <div className="rounded-xl border border-stone-200 bg-white/80 px-3 py-8 text-center text-sm text-stone-500">
@@ -429,138 +491,244 @@ export function NoteEditor({
         ? "h3"
         : "p";
 
+  const blockStyleLabel =
+    blockStyle === "h1"
+      ? "Heading 1"
+      : blockStyle === "h2"
+        ? "Heading 2"
+        : blockStyle === "h3"
+          ? "Heading 3"
+          : "Text";
+
   return (
-    <div className="rounded-xl border border-stone-200 bg-white/90 shadow-sm">
-      {/* Primary bar — essentials always visible; rest in overflow */}
-      <div className="flex flex-wrap items-center gap-0.5 border-b border-stone-100 bg-stone-50/80 px-1 py-1">
-        <div
-          className="relative inline-flex h-9 items-center rounded-lg hover:bg-stone-200/70 sm:h-8"
-          title="Paragraph style"
-        >
-          <Heading className="pointer-events-none absolute left-1.5 h-3.5 w-3.5 text-stone-600" />
-          <select
-            aria-label="Paragraph style"
-            className="h-9 w-[4.5rem] cursor-pointer appearance-none truncate rounded-lg border-0 bg-transparent py-0 pl-7 pr-5 text-[11px] font-semibold text-stone-800 sm:h-8"
-            value={blockStyle}
+    <div className="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm">
+      {/* Primary Toolbar Bar */}
+      <div className="flex flex-wrap items-center gap-1 border-b border-stone-100 bg-stone-50/90 px-2 py-1.5 sm:gap-1.5">
+        {/* 1. Block Style Selector */}
+        <div className="relative" ref={blockMenuRef}>
+          <button
+            type="button"
             disabled={disabled}
-            onMouseDown={rememberSelection}
-            onFocus={rememberSelection}
-            onChange={(e) => {
-              const v = e.target.value;
-              restoreSelection();
-              withPreservedSelection(editor, () => {
-                if (v === "p") {
-                  editor.chain().focus().setParagraph().run();
-                } else {
-                  const level = Number(v.replace("h", "")) as 1 | 2 | 3;
-                  editor.chain().focus().setHeading({ level }).run();
-                }
-              });
-              onChange(editor.getHTML());
+            onMouseDown={keepSelection}
+            onClick={() => {
+              rememberSelection();
+              setBlockMenuOpen((v) => !v);
             }}
+            className={cn(
+              "inline-flex h-8 items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-2.5 text-xs font-semibold text-stone-800 shadow-sm transition hover:bg-stone-100 active:scale-95 disabled:opacity-40",
+              blockMenuOpen && "border-stone-400 bg-stone-100"
+            )}
+            title="Text formatting style"
           >
-            <option value="p">Text</option>
-            <option value="h1">H1</option>
-            <option value="h2">H2</option>
-            <option value="h3">H3</option>
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-1 h-3 w-3 text-stone-400" />
+            <Heading className="h-3.5 w-3.5 text-stone-500" />
+            <span>{blockStyleLabel}</span>
+            <ChevronDown className="h-3 w-3 text-stone-400" />
+          </button>
+          {blockMenuOpen && (
+            <div className="absolute left-0 top-full z-40 mt-1 w-36 rounded-xl border border-stone-200 bg-white p-1 shadow-xl animate-in fade-in zoom-in-95">
+              <button
+                type="button"
+                className={cn(
+                  "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-stone-700 hover:bg-stone-100",
+                  blockStyle === "p" && "bg-stone-100 font-bold text-stone-900"
+                )}
+                onClick={() => {
+                  restoreSelection();
+                  withPreservedSelection(editor, () => {
+                    editor.chain().focus().setParagraph().run();
+                  });
+                  setBlockMenuOpen(false);
+                  onChange(editor.getHTML());
+                }}
+              >
+                <span>Normal text</span>
+                {blockStyle === "p" && <Check className="h-3.5 w-3.5 text-stone-800" />}
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-bold text-stone-700 hover:bg-stone-100",
+                  blockStyle === "h1" && "bg-stone-100 font-bold text-stone-900"
+                )}
+                onClick={() => {
+                  restoreSelection();
+                  withPreservedSelection(editor, () => {
+                    editor.chain().focus().setHeading({ level: 1 }).run();
+                  });
+                  setBlockMenuOpen(false);
+                  onChange(editor.getHTML());
+                }}
+              >
+                <span className="text-sm">Heading 1</span>
+                {blockStyle === "h1" && <Check className="h-3.5 w-3.5 text-stone-800" />}
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100",
+                  blockStyle === "h2" && "bg-stone-100 font-bold text-stone-900"
+                )}
+                onClick={() => {
+                  restoreSelection();
+                  withPreservedSelection(editor, () => {
+                    editor.chain().focus().setHeading({ level: 2 }).run();
+                  });
+                  setBlockMenuOpen(false);
+                  onChange(editor.getHTML());
+                }}
+              >
+                <span>Heading 2</span>
+                {blockStyle === "h2" && <Check className="h-3.5 w-3.5 text-stone-800" />}
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-100",
+                  blockStyle === "h3" && "bg-stone-100 font-bold text-stone-900"
+                )}
+                onClick={() => {
+                  restoreSelection();
+                  withPreservedSelection(editor, () => {
+                    editor.chain().focus().setHeading({ level: 3 }).run();
+                  });
+                  setBlockMenuOpen(false);
+                  onChange(editor.getHTML());
+                }}
+              >
+                <span>Heading 3</span>
+                {blockStyle === "h3" && <Check className="h-3.5 w-3.5 text-stone-800" />}
+              </button>
+            </div>
+          )}
         </div>
 
-        <ToolbarButton
-          title="Bold"
-          active={editor.isActive("bold")}
-          onClick={() => editor.chain().focus().toggleBold().run()}
-        >
-          <Bold className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Italic"
-          active={editor.isActive("italic")}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-        >
-          <Italic className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Bullet list"
-          active={editor.isActive("bulletList")}
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-        >
-          <List className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Numbered list"
-          active={editor.isActive("orderedList")}
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        >
-          <ListOrdered className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Link"
-          active={editor.isActive("link")}
-          onClick={() => {
-            const prev = editor.getAttributes("link").href as
-              | string
-              | undefined;
-            const url = window.prompt("Link URL", prev || "https://");
-            if (url === null) return;
-            if (!url) {
-              editor.chain().focus().unsetLink().run();
-              return;
-            }
-            editor
-              .chain()
-              .focus()
-              .extendMarkRange("link")
-              .setLink({ href: url })
-              .run();
-          }}
-        >
-          <Link2 className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Insert link preview card"
-          disabled={uploading || disabled}
-          onClick={() => {
-            const url = window.prompt("Enter URL for link preview card:", "https://");
-            if (url?.trim() && url.trim() !== "https://") {
-              void insertLinkPreview(url.trim());
-            }
-          }}
-        >
-          <Globe className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          title="Upload image"
-          disabled={uploading || disabled}
-          onClick={() => fileRef.current?.click()}
-        >
-          <ImageIcon className="h-4 w-4" />
-        </ToolbarButton>
+        <span className="mx-0.5 h-4 w-px bg-stone-200" />
 
-        {/* Overflow — font/size/color/align/etc */}
-        <div className="relative ml-auto" ref={moreMenuRef}>
+        {/* 2. Inline Formatting Marks */}
+        <div className="flex items-center gap-0.5">
           <ToolbarButton
-            title="More formatting"
-            active={moreOpen}
+            title="Bold (⌘B)"
+            active={editor.isActive("bold")}
+            onClick={() => editor.chain().focus().toggleBold().run()}
+          >
+            <Bold className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            title="Italic (⌘I)"
+            active={editor.isActive("italic")}
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+          >
+            <Italic className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            title="Underline (⌘U)"
+            active={editor.isActive("underline")}
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+          >
+            <UnderlineIcon className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            title="Strikethrough"
+            active={editor.isActive("strike")}
+            onClick={() => editor.chain().focus().toggleStrike().run()}
+          >
+            <Strikethrough className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            title="Highlight"
+            active={editor.isActive("highlight")}
+            onClick={() =>
+              editor.chain().focus().toggleHighlight({ color: "#fef08a" }).run()
+            }
+          >
+            <Highlighter className="h-4 w-4" />
+          </ToolbarButton>
+        </div>
+
+        <span className="mx-0.5 h-4 w-px bg-stone-200" />
+
+        {/* 3. Lists & Alignments */}
+        <div className="flex items-center gap-0.5">
+          <ToolbarButton
+            title="Bullet list"
+            active={editor.isActive("bulletList")}
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+          >
+            <List className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            title="Numbered list"
+            active={editor.isActive("orderedList")}
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          >
+            <ListOrdered className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            title="Align left"
+            active={editor.isActive({ textAlign: "left" })}
+            onClick={() => editor.chain().focus().setTextAlign("left").run()}
+          >
+            <AlignLeft className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            title="Align center"
+            active={editor.isActive({ textAlign: "center" })}
+            onClick={() => editor.chain().focus().setTextAlign("center").run()}
+          >
+            <AlignCenter className="h-4 w-4" />
+          </ToolbarButton>
+        </div>
+
+        <span className="mx-0.5 h-4 w-px bg-stone-200" />
+
+        {/* 4. Inserts (Link / Image / Video) */}
+        <div className="flex items-center gap-0.5">
+          <ToolbarButton
+            title="Add link or preview card"
+            active={linkBarOpen || editor.isActive("link")}
+            onClick={openLinkBar}
+          >
+            <Link2 className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            title="Upload image"
+            disabled={uploading || disabled}
+            onClick={() => fileRef.current?.click()}
+          >
+            <ImageIcon className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            title="Upload video (≤3 MB)"
+            disabled={uploading || disabled}
+            onClick={() => videoRef.current?.click()}
+          >
+            <Video className="h-4 w-4" />
+          </ToolbarButton>
+        </div>
+
+        {/* 5. Typography & Color Palettes Popover */}
+        <div className="relative ml-auto" ref={styleMenuRef}>
+          <ToolbarButton
+            title="Typography and text color"
+            active={styleMenuOpen}
             disabled={disabled}
             onClick={() => {
               rememberSelection();
-              setMoreOpen((v) => !v);
+              setStyleMenuOpen((v) => !v);
             }}
           >
-            <MoreHorizontal className="h-4 w-4" />
+            <Palette className="h-4 w-4 text-amber-900" />
           </ToolbarButton>
-          {moreOpen && (
-            <div className="absolute right-0 top-full z-30 mt-1 w-[min(18rem,calc(100vw-1.5rem))] rounded-xl border border-stone-200 bg-white p-2 shadow-xl">
-              <div className="mb-2 grid grid-cols-2 gap-1.5">
-                <label className="flex flex-col gap-0.5">
-                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-stone-500">
-                    <Type className="h-3 w-3" /> Font
+          {styleMenuOpen && (
+            <div className="absolute right-0 top-full z-40 mt-1 w-64 rounded-xl border border-stone-200 bg-white p-3 shadow-xl animate-in fade-in zoom-in-95">
+              <div className="mb-3 space-y-2">
+                <label className="flex flex-col gap-1">
+                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-stone-500">
+                    <Type className="h-3 w-3" /> Font Family
                   </span>
                   <select
                     aria-label="Font family"
-                    className="h-9 rounded-lg border border-stone-200 bg-stone-50 px-2 text-xs font-semibold text-stone-800"
+                    className="h-8 rounded-lg border border-stone-200 bg-stone-50 px-2 text-xs font-medium text-stone-800"
                     value={currentFont}
                     onMouseDown={rememberSelection}
                     onFocus={rememberSelection}
@@ -585,13 +753,14 @@ export function NoteEditor({
                     ))}
                   </select>
                 </label>
-                <label className="flex flex-col gap-0.5">
-                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-stone-500">
-                    <ALargeSmall className="h-3 w-3" /> Size
+
+                <label className="flex flex-col gap-1">
+                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-stone-500">
+                    <ALargeSmall className="h-3 w-3" /> Font Size
                   </span>
                   <select
                     aria-label="Font size"
-                    className="h-9 rounded-lg border border-stone-200 bg-stone-50 px-2 text-xs font-semibold text-stone-800"
+                    className="h-8 rounded-lg border border-stone-200 bg-stone-50 px-2 text-xs font-medium text-stone-800"
                     value={currentSize || "16px"}
                     onMouseDown={rememberSelection}
                     onFocus={rememberSelection}
@@ -613,20 +782,19 @@ export function NoteEditor({
                 </label>
               </div>
 
-              <div className="mb-2">
-                <span className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-stone-500">
-                  <Palette className="h-3 w-3" /> Color
+              <div>
+                <span className="mb-1.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-stone-500">
+                  <Palette className="h-3 w-3" /> Text Color
                 </span>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {TEXT_COLORS.map((c) => (
                     <button
                       key={c}
                       type="button"
                       title={c}
                       className={cn(
-                        "h-6 w-6 rounded-full ring-1 ring-stone-300",
-                        currentColor === c &&
-                          "ring-2 ring-stone-700 ring-offset-1"
+                        "h-6 w-6 rounded-full ring-1 ring-stone-300 transition hover:scale-110",
+                        currentColor === c && "ring-2 ring-stone-800 ring-offset-2"
                       )}
                       style={{ backgroundColor: c }}
                       onMouseDown={(e) => {
@@ -644,86 +812,6 @@ export function NoteEditor({
                   ))}
                 </div>
               </div>
-
-              <div className="mb-1 flex flex-wrap gap-0.5">
-                <ToolbarButton
-                  title="Underline"
-                  active={editor.isActive("underline")}
-                  onClick={() =>
-                    editor.chain().focus().toggleUnderline().run()
-                  }
-                >
-                  <UnderlineIcon className="h-4 w-4" />
-                </ToolbarButton>
-                <ToolbarButton
-                  title="Strike"
-                  active={editor.isActive("strike")}
-                  onClick={() => editor.chain().focus().toggleStrike().run()}
-                >
-                  <Strikethrough className="h-4 w-4" />
-                </ToolbarButton>
-                <ToolbarButton
-                  title="Highlight"
-                  active={editor.isActive("highlight")}
-                  onClick={() =>
-                    editor
-                      .chain()
-                      .focus()
-                      .toggleHighlight({ color: "#fef08a" })
-                      .run()
-                  }
-                >
-                  <Highlighter className="h-4 w-4" />
-                </ToolbarButton>
-                <span className="mx-0.5 h-5 w-px self-center bg-stone-200" />
-                <ToolbarButton
-                  title="Align left"
-                  active={editor.isActive({ textAlign: "left" })}
-                  onClick={() =>
-                    editor.chain().focus().setTextAlign("left").run()
-                  }
-                >
-                  <AlignLeft className="h-4 w-4" />
-                </ToolbarButton>
-                <ToolbarButton
-                  title="Align center"
-                  active={editor.isActive({ textAlign: "center" })}
-                  onClick={() =>
-                    editor.chain().focus().setTextAlign("center").run()
-                  }
-                >
-                  <AlignCenter className="h-4 w-4" />
-                </ToolbarButton>
-                <ToolbarButton
-                  title="Align right"
-                  active={editor.isActive({ textAlign: "right" })}
-                  onClick={() =>
-                    editor.chain().focus().setTextAlign("right").run()
-                  }
-                >
-                  <AlignRight className="h-4 w-4" />
-                </ToolbarButton>
-                <ToolbarButton
-                  title="Justify"
-                  active={editor.isActive({ textAlign: "justify" })}
-                  onClick={() =>
-                    editor.chain().focus().setTextAlign("justify").run()
-                  }
-                >
-                  <AlignJustify className="h-4 w-4" />
-                </ToolbarButton>
-              </div>
-
-              <ToolbarButton
-                title="Upload video (≤3 MB)"
-                disabled={uploading || disabled}
-                onClick={() => videoRef.current?.click()}
-              >
-                <Video className="h-4 w-4" />
-              </ToolbarButton>
-              <span className="ml-1 align-middle text-[11px] text-stone-500">
-                Video
-              </span>
             </div>
           )}
         </div>
@@ -750,23 +838,85 @@ export function NoteEditor({
             if (f) void uploadAndInsert(f, true);
           }}
         />
+      </div>
+
+      {/* Inline Link Toolbar Bar */}
+      {linkBarOpen && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-amber-200/80 bg-amber-50/90 px-3 py-2 text-xs animate-in slide-in-from-top-1">
+          <Link2 className="h-4 w-4 shrink-0 text-amber-800" />
+          <input
+            ref={linkInputRef}
+            type="url"
+            placeholder="Paste or enter link URL (e.g. https://...)"
+            value={linkInputUrl}
+            onChange={(e) => setLinkInputUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                applyInlineLink();
+              } else if (e.key === "Escape") {
+                setLinkBarOpen(false);
+              }
+            }}
+            className="h-8 min-w-[14rem] flex-1 rounded-lg border border-amber-300 bg-white px-2.5 text-xs text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-600"
+          />
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={applyInlineLink}
+              className="inline-flex h-8 items-center rounded-lg bg-[var(--primary)] px-3 font-semibold text-white shadow-sm transition hover:bg-[#4a3125] active:scale-95"
+            >
+              Link text
+            </button>
+            <button
+              type="button"
+              onClick={applyCardPreview}
+              className="inline-flex h-8 items-center gap-1 rounded-lg border border-amber-900/20 bg-white px-3 font-semibold text-amber-950 shadow-sm transition hover:bg-amber-100/70 active:scale-95"
+            >
+              <Globe className="h-3.5 w-3.5 text-amber-800" />
+              Preview card
+            </button>
+            {editor.isActive("link") && (
+              <button
+                type="button"
+                onClick={() => {
+                  editor.chain().focus().unsetLink().run();
+                  setLinkBarOpen(false);
+                  onChange(editor.getHTML());
+                }}
+                className="h-8 rounded-lg px-2 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+              >
+                Remove link
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setLinkBarOpen(false)}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-stone-500 hover:bg-amber-200/60 hover:text-stone-900"
+              aria-label="Close link toolbar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Editor Content Area */}
+      <div className="relative">
+        <EditorContent editor={editor} />
         {uploading && (
-          <span className="ml-1 text-xs font-semibold text-stone-500">
+          <div className="absolute bottom-2 right-2 flex items-center gap-1.5 rounded-full bg-stone-900/80 px-3 py-1 text-xs font-medium text-white shadow backdrop-blur-sm">
+            <div className="h-2 w-2 animate-ping rounded-full bg-amber-400" />
             Working…
-          </span>
+          </div>
         )}
       </div>
 
-      <EditorContent editor={editor} />
       {uploadError && (
-        <p className="border-t border-amber-100 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
+        <div className="border-t border-amber-100 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
           {uploadError}
-        </p>
+        </div>
       )}
-      <p className="border-t border-stone-100 px-3 py-1.5 text-[11px] text-stone-500">
-        Essentials on the bar · font, size, color, align in ⋯ · paste links for
-        snapshot cards.
-      </p>
     </div>
   );
 }
