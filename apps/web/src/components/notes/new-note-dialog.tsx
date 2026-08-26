@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { X } from "lucide-react";
 import type { NoteDetail } from "@note-share/shared";
 import { NewNoteForm } from "@/components/notes/new-note-form";
 import { Button } from "@/components/ui/button";
@@ -32,20 +33,19 @@ export function NewNoteDialog({
         className="relative flex h-[100dvh] max-h-[100dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-amber-900/15 bg-[#fffcf5] shadow-2xl sm:h-[calc((100dvh-4rem)*0.7)] sm:max-h-[calc((100dvh-4rem)*0.7)] sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-stone-200/80 px-4 py-3 sm:px-5 sm:py-4">
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
-              Compose
-            </p>
-            <h2 className="font-display text-xl font-semibold text-stone-900 sm:text-2xl">
-              Pin a new note
-            </h2>
-            <p className="mt-0.5 text-xs text-stone-500 sm:text-sm">
-              Stays on the softboard — mint a share link without leaving.
-            </p>
-          </div>
-          <Button type="button" size="sm" variant="outline" onClick={onClose}>
-            Close
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-stone-200/80 px-4 py-3 sm:px-5 sm:py-3.5">
+          <h2 className="font-display text-lg font-semibold text-stone-900 sm:text-xl">
+            New note
+          </h2>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 rounded-lg p-0 text-stone-500 hover:bg-stone-200/60 hover:text-stone-900"
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
+            <X className="h-4 w-4" />
           </Button>
         </div>
         <div className="flex min-h-0 flex-1 flex-col">

@@ -47,11 +47,17 @@ export function Softboard({
   const [composeOpen, setComposeOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  const tabCacheRef = useRef<
+    Record<"mine" | "feed", { pins: BoardPin[]; nextCursor: string | null } | undefined>
+  >({
+    mine: undefined,
+    feed: undefined,
+  });
 
   const fetchPage = useCallback(
-    async (cursor: string | null, append: boolean) => {
+    async (cursor: string | null, append: boolean, silent = false) => {
       if (append) setLoadingMore(true);
-      else setLoading(true);
+      else if (!silent) setLoading(true);
       setError(null);
       try {
         const page =
@@ -61,11 +67,13 @@ export function Softboard({
         setPins((prev) => {
           const merged = append ? [...prev, ...page.items] : page.items;
           const seen = new Set<string>();
-          return merged.filter((p) => {
+          const deduped = merged.filter((p) => {
             if (seen.has(p.id)) return false;
             seen.add(p.id);
             return true;
           });
+          tabCacheRef.current[tab] = { pins: deduped, nextCursor: page.nextCursor };
+          return deduped;
         });
         setNextCursor(page.nextCursor);
       } catch (err) {
@@ -79,10 +87,19 @@ export function Softboard({
   );
 
   useEffect(() => {
-    setPins([]);
-    setNextCursor(null);
-    if (!isMobile) setPositions(loadPositions(userId, tab));
-    void fetchPage(null, false);
+    const cached = tabCacheRef.current[tab];
+    if (cached) {
+      setPins(cached.pins);
+      setNextCursor(cached.nextCursor);
+      setLoading(false);
+      if (!isMobile) setPositions(loadPositions(userId, tab));
+      void fetchPage(null, false, true);
+    } else {
+      setPins([]);
+      setNextCursor(null);
+      if (!isMobile) setPositions(loadPositions(userId, tab));
+      void fetchPage(null, false, false);
+    }
   }, [userId, tab, fetchPage, isMobile]);
 
   // Desktop: assign default freeform positions for new pins
@@ -108,6 +125,14 @@ export function Softboard({
   }, [pins, userId, tab, isMobile]);
 
   const onMove = useCallback(
+    (id: string, pos: PinPosition) => {
+      if (isMobile) return;
+      setPositions((prev) => ({ ...prev, [id]: pos }));
+    },
+    [isMobile]
+  );
+
+  const onMoveEnd = useCallback(
     (id: string, pos: PinPosition) => {
       if (isMobile) return;
       setPositions((prev) => {
@@ -221,6 +246,7 @@ export function Softboard({
                   position={pos}
                   draggable
                   onMove={onMove}
+                  onMoveEnd={onMoveEnd}
                   onOpen={setActive}
                 />
               );
@@ -308,8 +334,9 @@ export function Softboard({
               isAccessible: note.isAccessible,
               createdAt: note.createdAt,
             };
+            tabCacheRef.current.mine = undefined;
             setPins((prev) => [pin, ...prev.filter((p) => p.id !== pin.id)]);
-            void fetchPage(null, false);
+            void fetchPage(null, false, true);
           }}
         />
       )}

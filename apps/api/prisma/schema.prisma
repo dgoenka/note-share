@@ -45,9 +45,9 @@ model Note {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
-  @@index([ownerId])
+  @@index([ownerId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([accessType, createdAt(sort: Desc), id(sort: Desc)])
   @@index([shareToken])
-  @@index([accessType, createdAt])
   @@map("notes")
 }
 
@@ -85,7 +85,7 @@ model NoteAllowedEmail {
   createdAt DateTime @default(now())
 
   @@unique([noteId, email])
-  @@index([email])
+  @@index([email, noteId])
   @@map("note_allowed_emails")
 }
 

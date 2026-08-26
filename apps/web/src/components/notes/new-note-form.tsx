@@ -11,12 +11,25 @@ import {
 } from "@note-share/shared";
 import { useAuth } from "@/lib/auth-context";
 import { api, ApiError } from "@/lib/api";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NoteEditor } from "@/components/rich-text/note-editor";
 import { Alert } from "@/components/ui/alert";
+import { Spinner } from "@/components/ui/spinner";
 import { LoadingOverlay } from "@/components/ui/loading-block";
+
+const NoteEditor = dynamic(
+  () => import("@/components/rich-text/note-editor").then((m) => m.NoteEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-48 items-center justify-center rounded-xl border border-stone-200 bg-white/80 text-sm text-stone-500">
+        <Spinner size="sm" /> Loading editor…
+      </div>
+    ),
+  }
+);
 
 function defaultExpiryLocal(): string {
   const d = new Date(Date.now() + 24 * 60 * 60 * 1000);

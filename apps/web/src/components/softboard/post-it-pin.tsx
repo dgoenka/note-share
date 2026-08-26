@@ -66,12 +66,14 @@ export function PostItPin({
   position,
   draggable,
   onMove,
+  onMoveEnd,
   onOpen,
 }: {
   pin: BoardPin;
   position: PinPosition;
   draggable: boolean;
   onMove: (id: string, next: PinPosition) => void;
+  onMoveEnd?: (id: string, next: PinPosition) => void;
   onOpen: (pin: BoardPin) => void;
 }) {
   const drag = useRef<{
@@ -137,7 +139,11 @@ export function PostItPin({
         } catch {
           /* ignore */
         }
-        if (!wasDrag) onOpen(pin);
+        if (wasDrag) {
+          onMoveEnd?.(pin.id, position);
+        } else {
+          onOpen(pin);
+        }
       }}
       onClick={() => {
         if (!draggable) onOpen(pin);

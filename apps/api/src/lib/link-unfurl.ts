@@ -11,6 +11,28 @@ export type LinkUnfurl = {
 
 const FETCH_TIMEOUT_MS = 8_000;
 const MAX_BYTES = 1_500_000;
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const MAX_CACHE_ENTRIES = 500;
+
+const unfurlCache = new Map<string, { data: LinkUnfurl; expiresAt: number }>();
+
+function getCachedUnfurl(urlStr: string): LinkUnfurl | null {
+  const entry = unfurlCache.get(urlStr);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    unfurlCache.delete(urlStr);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCachedUnfurl(urlStr: string, data: LinkUnfurl) {
+  if (unfurlCache.size >= MAX_CACHE_ENTRIES) {
+    const firstKey = unfurlCache.keys().next().value;
+    if (firstKey) unfurlCache.delete(firstKey);
+  }
+  unfurlCache.set(urlStr, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+}
 
 function absUrl(base: string, maybe: string | undefined): string {
   if (!maybe) return "";
@@ -44,6 +66,10 @@ export async function unfurlLink(rawUrl: string): Promise<LinkUnfurl> {
   if (!["http:", "https:"].includes(url.protocol)) {
     throw new HTTPException(400, { message: "Only http(s) URLs are supported" });
   }
+
+  const normalized = url.toString();
+  const cached = getCachedUnfurl(normalized);
+  if (cached) return cached;
   // Block obvious local/metadata targets
   const host = url.hostname.toLowerCase();
   if (
@@ -114,11 +140,14 @@ export async function unfurlLink(rawUrl: string): Promise<LinkUnfurl> {
   const siteName =
     meta($, "og:site_name") || url.hostname.replace(/^www\./, "");
 
-  return {
+  const result: LinkUnfurl = {
     url: url.toString(),
     title: title.slice(0, 200),
     description: description.slice(0, 400),
     image: image.startsWith("https:") || image.startsWith("http:") ? image : "",
     siteName: siteName.slice(0, 100),
   };
+
+  setCachedUnfurl(normalized, result);
+  return result;
 }
